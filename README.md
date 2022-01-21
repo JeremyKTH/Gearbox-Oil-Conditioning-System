@@ -13,7 +13,6 @@ This is a repo for my Master Thesis. The code mainly done in Matlab and TwinCAT 
 ## Introduction
 X
 
-k-layer neural network + Cyclical Learning Rates + Batch Normalisation
 
 <!-- CONTACT -->
 ## Contact
