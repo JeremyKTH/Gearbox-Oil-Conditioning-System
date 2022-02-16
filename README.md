@@ -21,7 +21,7 @@ This code is for data pre-processing the original raw data
 This code is for system identification
 
 ### SI_2
-This code is for pole placement
+This code is for pole placement, in Jupyter Lab and MatLab form
 
 ### try_reduce_order
 This code is for using the balred() function to reduce model order
