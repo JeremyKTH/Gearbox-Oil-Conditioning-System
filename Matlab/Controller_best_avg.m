@@ -1,13 +1,19 @@
-%% Best +/-40% Model: ARMAX
-b0 = 3.264e-05;
-a1 = -1.98;
-a0 = 0.9805;
-B = [b0];         % B
-A = [1, a1, a0];  % A
+%% Best Avg. Model: SS
+A_ss = [[0.9973, 0.005886];
+       [-0.007831, 0.9852]];
+B_ss = [2.603e-07;
+        -3623e-05];
+C_ss = [-405.6, -0.9557];
+D_ss = 0;
+
+[B, A] = ss2tf(A_ss, B_ss, C_ss, D_ss);
+b1 = B(1); b0 = B(2);
+a1 = A(2); a0 = A(3);
 Ts = 0.4;
-Gp = tf(B, A, Ts);
-poles = pole(Gp);  % 0.99 +/- 0.02i
-zeros = zero(Gp);  % No zeros
+Gp = tf(B, A, Ts)
+
+poles = pole(Gp);  % 0.99 +/- 0.0031i
+zeros = zero(Gp);  % -1.5083
 
 %% Choose Poles (w_m, zeta_m) (w_o, zeta_o)
 %--- A_m ------
@@ -33,7 +39,7 @@ disp(chosen_disc_poles)
 
 %% Diophantine Eqn A_cl = AR + BS
 syms P I D N z
-A_cl = (z^2+a1*z+a0)*(z-1)*(z-1+N*Ts) + (b0)*((z-1)*(z-1+N*Ts)*P+(z-1+N*Ts)*I*Ts+(z-1)^2*D*N);
+A_cl = (z^2+a1*z+a0)*(z-1)*(z-1+N*Ts) + (b1*z+b0)*((z-1)*(z-1+N*Ts)*P+(z-1+N*Ts)*I*Ts+(z-1)^2*D*N);
 A_d = (z^2-p3*z+p2)*(z^2-p1*z+p0);
 A_cl_c = fliplr(coeffs(A_cl, z)); % retreive coeficients
 A_d_c = fliplr(coeffs(A_d, z));   % retreive coeficients
@@ -45,10 +51,10 @@ equ4 = A_cl_c(5) == A_d_c(5); % z^0
 
 sol = solve([equ1, equ2, equ3, equ4], [P, I, D, N]);
 
-P = double(sol.P)   % 3151.3
-I = double(sol.I)   % 696.698
-D = double(sol.D)   % 4933.2
-N = double(sol.N)   % 3.2468
+P = double(sol.P)   % 2.9864
+I = double(sol.I)   % 0.6575
+D = double(sol.D)   % 4.6858
+N = double(sol.N)   % 3.2530
 
 %% Gc
 z = tf('z', Ts);
@@ -83,7 +89,7 @@ equ3 = G_ff_c(3) == T(3); % z^0
 
 sol = solve([equ1, equ3], [b, c]);
 
-b = double(sol.b)   % 0.4684
-c = double(sol.c)   % 0.1157
+b = double(sol.b)   % 0.4666
+c = double(sol.c)   % 0.1151
 %% Get S for Simulink
 [S, ~] = tfdata(Gc);
