@@ -63,9 +63,14 @@ Gff = tf(T, R, Ts);
 
 %% Entire closed loop check
 Gyr = Gff*Gp/(1+Gc*Gp)
-pzmap(Gyr)
 pole(Gyr)
 zero(Gyr)
+
+figure(1)
+pzmap(Gyr)
+
+figure(2)
+step(Gyr)
 
 %% Solve b & c for Simulink
 syms b c z
