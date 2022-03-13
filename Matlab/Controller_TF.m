@@ -1,14 +1,51 @@
-%% Best +/-40% TF Model
-b = 0.001273;
-a = -0.9965;
-B = [b];         % B
+T_train = readtable('C:\Users\jerem\Documents\Python Scripts\Scania\Test_Data\Training_Data\D_48404_train.csv');
+T_train.Properties.VariableNames = {'OTSV1', 'TV12', 'TV11', 'OTGT1'};
+T_test = readtable('C:\Users\jerem\Documents\Python Scripts\Scania\Test_Data\Testing_Data\D_48404_test.csv');
+T_test.Properties.VariableNames = {'OTSV1', 'TV12', 'TV11', 'OTGT1'};
+u_train = table2array(T_train(:, 1));   % OTSV1
+y_train = table2array(T_train(:, 2));   % TV12
+u_test =  table2array(T_test(:, 1));   % OTSV1
+y_test =  table2array(T_test(:, 2));   % TV12
+Ts = 0.4;  % second
+% Training Data
+data_train = iddata(y_train, u_train, Ts);
+data_train.Name = 'Data_Train';
+data_train.TimeUnit = 'seconds';
+data_train.InputName = 'OTSV1';   data_train.InputUnit = 'Percentage';
+data_train.OutputName = 'TV12';   data_train.OutputUnit = 'Celsius';
+% Testing Data
+data_test = iddata(y_test, u_test, Ts);
+data_test.Name = 'Data_Test';
+data_test.TimeUnit = 'seconds';
+data_test.InputName = 'OTSV1';   data_test.InputUnit = 'Percentage';
+data_test.OutputName = 'TV12';   data_test.OutputUnit = 'Celsius';
+data_train = detrend(data_train);
+data_test = detrend(data_test);
+%
+cost_func = 'NRMSE';
+%% TF
+opt = tfestOptions;
+opt.InitializeMethod = 'all';
+opt.SearchOptions.MaxIterations = 1000;
+iodelay = 0.0;   % In/Out delay
+Gp = tfest(data_train, 1, 1, opt, iodelay, 'Ts', Ts);
+
+[num, den] = tfdata(Gp);
+b = num{1}(2);
+a = den{1}(2);
+B = [b];     % B
 A = [1, a];  % A
-Ts = 0.4;
-
-Gp = tf(B, A, Ts);
-
-poles = pole(Gp);  % 0.9965
-zeros = zero(Gp);  % No zeros
+%% Best +/-40% TF Model
+% b = 0.001273;
+% a = -0.9965;
+% B = [b];         % B
+% A = [1, a];  % A
+% Ts = 0.4;
+% 
+% Gp = tf(B, A, Ts);
+% 
+% poles = pole(Gp);  % 0.9965
+% zeros = zero(Gp);  % No zeros
 %pzmap(Gp)
 %step(Gp)
 %% Choose Poles (w_m) (w_o)
@@ -61,3 +98,26 @@ pzmap(Gyr)
 
 figure(2)
 step(Gyr)
+%% The following parts are just for Simulink Usage
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%% Solve b & c for Simulink
+% syms b z
+% G_ff =  (z-1)*b*P+I*Ts;
+% G_ff_c = fliplr(coeffs(G_ff, z)); % retreive coeficients
+% 
+% equ1 = G_ff_c(1) == T(1); % z^1
+% equ2 = G_ff_c(2) == T(2); % z^0
+% 
+% 
+% sol = solve([equ1], [b]);
+% 
+% b = double(sol.b)   % 0.4684
+%b = T(1)/P
+b = -(T(2)-I*Ts)/P
+%% Get S for Simulink
+[S, ~] = tfdata(Gc);
+
+%% PID Tuner
+P = 4.9013;
+I = 0.042267;
+b = 1;
