@@ -1,6 +1,6 @@
 # Gearbox-Oil-Conditioning-System
 This is a repo for our Master Thesis. The code mainly done in Matlab and TwinCAT 3 through jupyter Lab.
-![GOCS](https://github.com/JeremyKTH/Gearbox-Oil-Conditioning-System/blob/main/Images/GOCS.jpg)
+
 
 
 ## Table of contents
@@ -24,6 +24,8 @@ RQ1: Is about the investigation of system identification of a Gearbox Oil Condit
 RQ2: Is about the further controller implementation using pole placement methods via TwinCAT3.
 
 5 different linear system identification models were used: ARX, ARMAX, BJ, TF, SS.
+
+![GOCS](https://github.com/JeremyKTH/Gearbox-Oil-Conditioning-System/blob/main/Images/GOCS.jpg)
 
 ## JupyterLab_Folder
 The original recoreded data from the testbed are cleaned and the useful information are extracted into three separate dataset: (D_47414, D_48414, D_49404), which represents the system data at different valve operating range. In each dataset, it is then further splitted into training and testing dataset with size ratio 1:1.
