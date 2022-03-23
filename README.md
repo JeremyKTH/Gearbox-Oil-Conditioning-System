@@ -47,7 +47,7 @@ Controller_ARMAX, Controller_SS, Controller_TF contains the controllers develope
 * Controller_TF
 
 ## Simulink_Folder
-The simulink files are used for real time simulation of the Gearbox Oil Conditioning System as well as inspecting the controller performances.
+The simulink files are used for initial simulation of the system identification models as well as inspecting the controller performances.
 * Simulink_ARMAX
 * Simulink_SS
 * Simulink_TF
