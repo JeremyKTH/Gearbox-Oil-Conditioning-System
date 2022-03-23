@@ -10,7 +10,7 @@ clear all
 
 %======BLANE (ALL) DATA===========
 % SYSTEM ID DATA: 40 - 70 - 40 - 10 - 40  ( 30%) - D_47414
-T_data_all = readtable('E:\Users\Blane Brinkley\OneDrive\Documents\Scania_GearboxOilTestBed\thesis_Data\systemID_testing_2.24\segmented_Data\D_47414_all.csv');
+T_data_all = readtable('E:\Users\Blane Brinkley\OneDrive\Documents\Scania_GearboxOilTestBed\thesis_Data\systemID_testing_2.24\segmented_Data\D_48404_all.csv');
 T_data_all.Properties.VariableNames = {'OTSV1', 'QV11', 'TV11', 'OTGT1', 'OTGT2', 'OTGT3', 'OTGT4', 'OTGT6', 'KVSV1', 'KVSV1_FB', 'KVGT2', 'TV12'};
 
 delay = 20; % 15 sec delay
@@ -31,32 +31,34 @@ coolantSource_Temp = table2array(T_data_all(:, 11));    % KVGT2 (11) - Source te
 intoGearbox_temp = table2array(T_data_all(:, 12));      % TV12 (12) - Inlet Gearbox Temp
 
 %% Training/Testing data sets
-%T_data = readtable('H:\Shared drives\Scania Thesis\Code\Test Data\Ts = 0.4\Training_Data\D_47414_train.csv');
-T_data = readtable('H:\Shared drives\Scania Thesis\Code\Test Data\Ts = 1\Training_Data\D_47414_train.csv');
-T_data.Properties.VariableNames = {'OTSV1', 'TV12', 'TV11'};
+%T_data = readtable('H:\Shared drives\Scania Thesis\Code\Test Data\Ts = 0.4\Training_Data\D_48404_train.csv');
+%T_train.Properties.VariableNames = {'OTSV1', 'TV12', 'TV11', 'OTGT1'};
+T_train = readtable('H:\Shared drives\Scania Thesis\Code\Test Data\Ts = 1\Training_Data\D_48404_train.csv');
+T_train.Properties.VariableNames = {'OTSV1', 'TV12', 'TV11'};
 
-%T_data = readtable('H:\Shared drives\Scania Thesis\Code\Test Data\Ts = 0.4\Training_Data\D_47414_test.csv');
-T_test = readtable('H:\Shared drives\Scania Thesis\Code\Test Data\Ts = 1\Testing_Data\D_47414_test.csv');
+%T_data = readtable('H:\Shared drives\Scania Thesis\Code\Test Data\Ts = 0.4\Training_Data\D_48404_test.csv');
+%T_test.Properties.VariableNames = {'OTSV1', 'TV12', 'TV11', 'OTGT1'};
+T_test = readtable('H:\Shared drives\Scania Thesis\Code\Test Data\Ts = 1\Testing_Data\D_48404_test.csv');
 T_test.Properties.VariableNames = {'OTSV1', 'TV12', 'TV11'};
 
 %Ts = 0.4;   % 200 ms --> base time from when Jeremy converted
-Ts = 1;
+Ts = 1; %**NEW DATASET FOR CONTROLLER**
 
-u_train = table2array(T_data(:, 1));   %OTSV1 (1) - 3-Way valve percentage
-y_train = table2array(T_data(:, 2));   %TV12 (2) - Temp into gearbox
+u_train = table2array(T_train(:, 1));   %OTSV1 (1) - 3-Way valve percentage
+y_train = table2array(T_train(:, 2));   %TV12 (2) - Temp into gearbox
 
 u_test = table2array(T_test(:, 1));   %OTSV1 (1) - 3-Way valve percentage
 y_test = table2array(T_test(:, 2));   %TV12 (2) - Temp into gearbox
 
-%% Plotting Initial Data
 total_time = Ts_all*(length(mainValve_Per)-1); % (sec)
 time = (0:Ts_all:total_time)./60;
+%% Plotting Initial Data
 
 figure(1)
 clf
 hold on
 plot(time, mainValve_Per, 'DisplayName', 'Mixing valve percentage')
-plot(time, intoGearbox_Flow, 'DisplayName', 'Inlet Gearbox Flow)')
+plot(time, intoGearbox_Flow, 'DisplayName', 'Inlet Gearbox Flow')
 plot(time, outGearbox_Temp, 'DisplayName', 'Outlet Gearbox Temp')
 plot(time, intoHE_Temp, 'DisplayName', 'Inlet HE Temp')
 %plot(time, outHE_Temp, 'DisplayName', 'Outlet HE Temp')
@@ -67,7 +69,7 @@ plot(time, coolantValve_Per, 'DisplayName', 'Coolant Valve Percentage')
 %plot(time, coolantValve_FB, 'DisplayName', 'Feedback for coolant valve')
 %plot(time, coolantSource_Temp, 'DisplayName', 'Source temp for cooler')
 plot(time, intoGearbox_temp, 'DisplayName', 'Inlet Gearbox Temp')
-title('Raw Data Plot (+/- 30%)')
+title('Raw Data Plot (+/- 40%)')
 xlabel('Time (minutes)')
 legend()
 hold off
@@ -79,8 +81,6 @@ data_train.Name = 'Data_Train';
 data_train.TimeUnit = 'seconds';
 data_train.InputName = 'Valve% (OTSV1)';   data_train.InputUnit = 'Percentage';
 data_train.OutputName = 'TV12';   data_train.OutputUnit = 'Celsius';
-
-%data_train = detrend(data_train);
 
 %=== FILTERING ===
 fs = 1/Ts; % sample rate (Hz) 5 Hz = .2 sec
@@ -100,11 +100,11 @@ data_train_filt.InputData = data_train.InputData;
 %returns: zeros, poles, gain
 %butter(order, bandpass, type)
 
-% sos = zp2sos(z,p,k);
+sos = zp2sos(z,p,k);
 %figure(2)
-% phasedelay(sos,1024);
+%phasedelay(sos,1024);
 %figure(3)
-% grpdelay(sos,1024)
+%grpdelay(sos,1024)
 [b,a] = zp2tf(z,p,k);
 
 data_train_filt.OutputData = filtfilt(b, a, data_train.OutputData);
@@ -127,8 +127,6 @@ data_test.Name = 'Data_Test';
 data_test.TimeUnit = 'seconds';
 data_test.InputName = 'Valve% (OTSV1)';   data_test.InputUnit = 'Percentage';
 data_test.OutputName = 'TV12';   data_test.OutputUnit = 'Celsius';
-
-%data_test = detrend(data_test);
 
 % Filter Specs
 data_test_filt = idfilt(data_test, [0 1]);
@@ -154,33 +152,29 @@ T_test.OutputOffset = 48;
 data_train = detrend(data_train);
 data_test = detrend(data_test);
 
-cost_func = 'NRMSE';
-
 %% Functions For Running Different models 
 
-sysTF = tfFunction(data_train_filt, data_test_filt, data_test, data_train, Ts, delay)
-%procEst = processFunction(data_train_filt, data_test_filt, data_test, data_train, delay)
-%[sysSS, ssTFEst] = ssFunction(data_train_filt, data_test_filt, data_test, data_train, delay)
+%sysTF = tfFunction(data_train_filt, data_test_filt, data_test, data_train, delay)
+% procEst = processFunction(data_train_filt, data_test_filt,data_test, data_train, delay)
+%[sysSS, ssTFEst] = ssFunction(data_train_filt, data_test_filt,data_test, data_train, delay)
 %arxEst = arxFunction(data_train_filt, data_test_filt, data_test, data_train, delay)
-%sysARMAX = armaxFunction(data_train_filt, data_test_filt, data_test, data_train, delay);
-%bjEst = bjFunction(data_train_filt, data_test_filt, data_test, data_train, delay)
-
+%sysARMAX = armaxFunction(data_train_filt, data_test_filt,data_test, data_train, delay);
+bjEst = bjFunction(data_train_filt, data_test_filt,data_test, data_train, delay)
+    
 %% Random NRMSE Generation
-
-%     nrmsePlot =    [1, .1991;
-%                     2, .2056;  
-%                     3, .1929; 
-%                     4, .193];
-%     figure(10)
+%     nrmsePlot =    [1, 0.2144;
+%                     2, 0.2267;  
+%                     3, 0.2135; 
+%                     4, 0.2132];
+%     figure(6)
 %     plot(nrmsePlot(:,1), nrmsePlot(:,2))
-%     title('TF Model Selection')
+%     title('SS Model Selection')
 %     xlabel('Fitting Order')
 %     ylabel('NRMSE')
-%     xticks(0:1:4)
-    
-%% Estimate TF Model
-
-function sysTF = tfFunction(data_train_filter, data_test_filter, data_test, data_train, Ts, delay)
+%     xticks(0:1:4)    
+        
+%% Estimate Transfer Function
+function sysTF = tfFunction(data_train_filter, data_test_filter, data_test, data_train, delay)
     opt = tfestOptions;
     opt.InitializeMethod = 'all';
     opt.Focus = 'prediction';
@@ -189,10 +183,10 @@ function sysTF = tfFunction(data_train_filter, data_test_filter, data_test, data
     %opt.DistrubanceModel = 'estimate'
 
     np = 2;          % Num of pole
-    nz = 1;          % Num of zero
-    iodelay = 20;   % In/Out delay
-    
-    sysTF = tfest(data_train, np, nz, iodelay, opt, 'Ts', Ts)
+    nz = 2;          % Num of zero
+    iodelay = delay;   % In/Out delay
+
+    sysTF = tfest(data_train, np, nz, iodelay, opt)
     
     sysTF.Report.Fit
     advice(sysTF, data_test)
@@ -215,12 +209,12 @@ function sysTF = tfFunction(data_train_filter, data_test_filter, data_test, data
     compare(data_test, sysTF, opt);
     
     figure(8)
-    resid(data_test, sysTF);
+    resid(data_test,sysTF);
     
-%     nrmsePlot =    [1, .3761;
-%                     2, .3927;  
-%                     3, .3695; 
-%                     4, .3752];
+%     nrmsePlot =    [1, .3758;
+%                     2, .379;  
+%                     3, .2583; 
+%                     4, .3868];
 %     figure(9)
 %     plot(nrmsePlot(:,1), nrmsePlot(:,2))
 %     title('TF Model Selection')
@@ -240,7 +234,7 @@ function [sysSS, ssTFEst] = ssFunction(data_train_filter, data_test_filter, data
 %     opt.Display = 'on';
 
     CoarseOrderSearch = [1, 2, 3, 4, 5, 6, 7, 8];
-    %sysSS = ssest(data_train, CoarseOrderSearch, 'Ts', data_train.Ts)
+    %sysSS = ssest(data_train, 2, 'Ts', data_train.Ts)
     %sysSS = ssregest(data_train, CoarseOrderSearch, 'Ts', data_train.Ts)
     sysSS = n4sid(data_train, CoarseOrderSearch)
     
@@ -252,15 +246,13 @@ function [sysSS, ssTFEst] = ssFunction(data_train_filter, data_test_filter, data
     y_ss_ref = data_test.y;
     % generate estimated output
     y_ss_est = sim(sysSS, data_test(:, [], :));
-
     % select cost function
     cost_func = 'NRMSE';
-
     % Goodness of Fit
     fit = goodnessOfFit(y_ss_est.y, y_ss_ref, cost_func)
     
-    [b, a] = ss2tf(sysSS.A, sysSS.B, sysSS.C, sysSS.D);
-    ssTFEst = tf(b, a)
+     [b, a] = ss2tf(sysSS.A, sysSS.B, sysSS.C, sysSS.D);
+     ssTFEst = tf(b, a)
     
     % Specify an initial condition of zero to match the initial condition that goodnessOfFit assumes
     opt = compareOptions('InitialCondition','e');   % 'z' : zero initial conditions
@@ -275,10 +267,10 @@ function [sysSS, ssTFEst] = ssFunction(data_train_filter, data_test_filter, data
     figure(8)
     resid(data_test, sysSS);
     
-%     nrmsePlot =    [1, .439;
-%                     2, .3883;  
-%                     3, .4029; 
-%                     4, .4065];
+%     nrmsePlot =    [1, 1;
+%                     2, 1;  
+%                     3, .424; 
+%                     4, .4433];
 %     figure(9)
 %     plot(nrmsePlot(:,1), nrmsePlot(:,2))
 %     title('SS Model Selection')
@@ -316,20 +308,19 @@ function arxEst = arxFunction(data_train_filter, data_test_filter, data_test, da
     compare(data_test, arxEst, opt);
     
     figure(8)
-    resid(data_test,arxEst);
+    resid(data_test, arxEst);
     
     
-%     nrmsePlot =    [1, .4701;
-%                     2, .4794;  
-%                     3, .4274; 
-%                     4, .3973];
+%     nrmsePlot =    [1, .2153;
+%                     2, .2148;  
+%                     3, .2136; 
+%                     4, .2124];
 %     figure(9)
 %     plot(nrmsePlot(:,1), nrmsePlot(:,2))
 %     title('ARX Model Selection')
 %     xlabel('Fitting Order')
 %     ylabel('NRMSE')
 %     xticks(0:1:4)
-   
 end
 
 %% ARMAX (includes a C polynomial for noise)
@@ -341,8 +332,8 @@ function sysARMAX = armaxFunction(data_train_filter, data_test_filter, data_test
     opt.SearchOptions.MaxIterations = 1000;
     opt.SearchOptions.Tolerance = 1e-5;
 
-    na = 2;
-    nb = 1;
+    na = 3; %den
+    nb = 1; %num
     nc = 1;
     nk = 1;
     
@@ -366,16 +357,17 @@ function sysARMAX = armaxFunction(data_train_filter, data_test_filter, data_test
     figure(8)
     resid(data_test,sysARMAX)
     
-    figure(8)
-    resid(data_test_filter,arxEst);
+%     figure(8)
+%     resid(data_test_filter,arxEst);
     
-%     nrmsePlot =    [1, .4704;
-%                     2, .3932;  
-%                     3, .3977; 
-%                     4, .3979];
+    
+%     nrmsePlot =    [1, .2117;
+%                     2, .305;  
+%                     3, .2145; 
+%                     4, .2432];
 %     figure(9)
 %     plot(nrmsePlot(:,1), nrmsePlot(:,2))
-%     title('ARXMAX Model Selection')
+%     title('ARMAX Model Selection')
 %     xlabel('Fitting Order')
 %     ylabel('NRMSE')
 %     xticks(0:1:4)
@@ -389,10 +381,10 @@ function bjEst = bjFunction(data_train_filter, data_test_filter, data_test, data
     opt.SearchOptions.Tolerance = 1e-5;
 
     
-    nb = 2;
-    nc = 1;
-    nd = 1;
-    nf = 2;
+    nb = 1; %num
+    nc = 1; %num (noise)
+    nd = 2; %den (noise)
+    nf = 1; %den
     nk = 1;
 
     bjEst = bj(data_train, [nb nc nd nf nk], opt, 'IODelay', 20) %[nb nc nd nf nk]
@@ -403,7 +395,6 @@ function bjEst = bjFunction(data_train_filter, data_test_filter, data_test, data
     y_bj_ref = data_test.y;
     % generate estimated output
     y_bj_est = sim(bjEst, data_test(:, [], :));
-
     % select cost function
     cost_func = 'NRMSE';
 
@@ -411,16 +402,16 @@ function bjEst = bjFunction(data_train_filter, data_test_filter, data_test, data
     fit = goodnessOfFit(y_bj_est.y, y_bj_ref, cost_func)
     
     opt = compareOptions('InitialCondition','e'); 
-    figure(6)
+    figure(7)
     compare(data_test, bjEst, opt);
     
-    figure(7)
+    figure(8)
     resid(data_test,bjEst)
     
-%     nrmsePlot =    [1, .3944;
-%                     2, .3886;  
-%                     3, .3784; 
-%                     4, .388];
+%     nrmsePlot =    [1, .3868;
+%                     2, .3892;  
+%                     3, .3777; 
+%                     4, .3803];
 %     figure(9)
 %     plot(nrmsePlot(:,1), nrmsePlot(:,2))
 %     title('BJ Model Selection')
@@ -432,7 +423,7 @@ end
 %% Process Model Estimation with Disturbance Model
 
 function procEst = processFunction(data_train_filter, data_test_filter, data_test, data_train, delay)
-    sysInit = idproc( 'P2DZ','TimeUnit','seconds');
+    sysInit = idproc( 'P2Z','TimeUnit','seconds');
     %sysInit = idproc( 'P1D','TimeUnit','seconds', 'inputDelay', 20)
     % 
     % sysInit.Structure.Kp.Value    = 1;
@@ -469,9 +460,9 @@ function procEst = processFunction(data_train_filter, data_test_filter, data_tes
     figure(8)
     resid(data_test,procEst)
     
-%     nrmsePlot =    [1, .376;
-%                     2, .3932;  
-%                     3, .3834]; 
+%     nrmsePlot =    [1, .2105;
+%                     2, .2077;  
+%                     3, .2129]; 
 %                     
 %     figure(9)
 %     plot(nrmsePlot(:,1), nrmsePlot(:,2))

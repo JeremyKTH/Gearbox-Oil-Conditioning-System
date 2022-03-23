@@ -1,26 +1,29 @@
 clc
 
-T_train = readtable('H:\Shared drives\Scania Thesis\Code\Test Data\2022-Feb-24\Training_Data\D_48404_train.csv');
-T_train.Properties.VariableNames = {'OTSV1', 'TV12', 'TV11', 'OTGT1'};
-T_test = readtable('H:\Shared drives\Scania Thesis\Code\Test Data\2022-Feb-24\Testing_Data\D_48404_test.csv');
-T_test.Properties.VariableNames = {'OTSV1', 'TV12', 'TV11', 'OTGT1'};
+T_train = readtable('H:\Shared drives\Scania Thesis\Code\Test Data\Ts = 1\Training_Data\D_48404_train.csv');
+%T_train.Properties.VariableNames = {'OTSV1', 'TV12', 'TV11', 'OTGT1'};
+T_train.Properties.VariableNames = {'OTSV1', 'TV12', 'TV11'};
+
+T_test = readtable('H:\Shared drives\Scania Thesis\Code\Test Data\Ts = 1\Testing_Data\D_48404_test.csv');
+%T_test.Properties.VariableNames = {'OTSV1', 'TV12', 'TV11', 'OTGT1'};
+T_test.Properties.VariableNames = {'OTSV1', 'TV12', 'TV11'};
+
 u_train = table2array(T_train(:, 1));   % OTSV1
 y_train = table2array(T_train(:, 2));   % TV12
 u_test =  table2array(T_test(:, 1));   % OTSV1
 y_test =  table2array(T_test(:, 2));   % TV12
 
-Ts_ID = .4;
-Ts = .4;  % second
-
+Ts = 1;  
+%Ts2 = .4;
 %% Training Data
-data_train = iddata(y_train, u_train, Ts_ID);
+data_train = iddata(y_train, u_train, Ts);
 data_train.Name = 'Data_Train';
 data_train.TimeUnit = 'seconds';
 data_train.InputName = 'OTSV1';   data_train.InputUnit = 'Percentage';
 data_train.OutputName = 'TV12';   data_train.OutputUnit = 'Celsius';
 
-%% Testing Data
-data_test = iddata(y_test, u_test, Ts_ID);
+% Testing Data
+data_test = iddata(y_test, u_test, Ts);
 data_test.Name = 'Data_Test';
 data_test.TimeUnit = 'seconds';
 data_test.InputName = 'OTSV1';   data_test.InputUnit = 'Percentage';
@@ -73,6 +76,8 @@ figure(2)
 pzmap(Gp)
 
 Gp_cont = d2c(Gp, 'zoh') %converting to cont. 
+%Gp = c2d(Gp_cont, Ts, 'zoh')
+
 Gp_ss = tf2ss(Gp.Numerator{1},Gp.denominator{1});
 
 %% Best +/-40% Model: ARMAX
