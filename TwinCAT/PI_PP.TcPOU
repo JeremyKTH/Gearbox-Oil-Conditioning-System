@@ -1,0 +1,109 @@
+VAR
+    bFirst:BOOL:=TRUE;		// First time or restarted
+    fSetp:LREAL;			// Reference Signal
+	fAct:LREAL;				// Feedback Signal
+	fErr:LREAL;				// Error (Ref - Fbck)    
+	fSumErr:LREAL;			// Integrator 
+	fDeriv:LREAL;			// Differential since last
+	fPrevErr:LREAL; 		// Previous Error
+	fIntActLimit:LREAL:=0.0;	// Degrees from setpoint where Integration of Error is active
+	fMaxInt:LREAL; 		// To Prevent Int. WindUp
+	fMinInt:LREAL; 	// To Prevent Int. WindUp
+	fOut:LREAL;				// Calculated output
+	//////////////////////////////////////////////
+	kp:LREAL; //:=2.0;
+	ki:LREAL; //:=1.0;
+	kd:LREAL; //:=0.25;
+	//////////////////////////////////////////////
+	fPeriod:LREAL:=1;		//Periodtid
+	One_Shot: BOOL;
+	One_Shot_fSetp: LREAL;
+	fOut_limit: LREAL;
+	Diff: LREAL;
+	count: INT;
+	count1: INT;
+	GT1Diff: LREAL;
+	GT4Diff: LREAL;
+	fOut_compare: LREAL;
+	count_gw: INT;
+	count_P160: INT;
+	count_TV11: INT;
+	count_TV12: INT;
+	count_OTGT1: INT;
+	count_gz: INT;
+
+    //////////////////////////////////////////////
+    // Newly Added
+    fP:LREAL;               // P term signal
+    fI:LREAL;               // I term signal
+    fIA:LREAL;              // Ant after I
+
+    bff:LREAL;              // feedforward b for P
+    
+    fIPrev:LREAL;           // Previous I term signal
+    fIAPrev:LREAL;          // Previous IA term signal
+
+    fDErr:LREAL;            // fStep*c - fAct
+    fDErrPrev:LREAL;        // Previous fStep*c - fAct
+
+    fant:LREAL;             // Ant before I
+    fSum:LREAL;             // fP + fI + fD + fIA
+
+    Tf:LREAL;               // Low Pass filter value
+    kant:LREAL;             // Anti-windup gain value
+
+END_VAR
+
+//////////////////////////////////////
+// First Time: bFirst = TRUE
+//////////////////////////////////////
+IF bFirst THEN
+    fPrevErr := 0;
+    fDPrev   := 0;
+    fIPrev   := 0;
+    fIAPrev  := 0;
+    fant     := 0;
+
+    fDErrPrev:= 0;
+
+    bFirst := FALSE;
+END_IF
+
+
+//////////////////////////////////////
+// Remove Offset: Reference & Feedback
+//////////////////////////////////////
+fSetp := fSetp - 48;
+fAct  := fAct  - 48;
+fErr  := fSetp - fAct;
+
+// P
+fP := kp*(bff*fSetp - fAct);
+
+// I
+fI := fIPrev + fErr*ki*fPeriod;
+
+// Anti-windup
+fIA := fIAPrev + fant*kant;
+
+// Saturation
+fSum := fP + fI + fIA;	
+
+IF fSum > 60 THEN
+    fOut := 60;
+ELSIF fSum < -40 THEN
+    fOut := -40;
+ELSE
+    fOut := fSum;
+END_IF
+
+//////////////////////////////////////
+// ADD Offset: Control Signal
+//////////////////////////////////////
+fOut := fOut + 40;
+
+// Updates
+fPrevErr := fErr;
+fIPrev := fI;
+fIAPrev := fIA;
+fant := fOut - fSum;
