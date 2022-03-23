@@ -38,9 +38,9 @@ opt.SearchOptions.MaxIterations = 1000;
 iodelay = 0;   % In/Out delay
 [Gp, ic] = tfest(data_train, 1, 1, opt, iodelay, 'Ts', Ts);
 [num, den] = tfdata(Gp);
-b = num{1}(2);
+b1 = num{1}(2);
 a = den{1}(2);
-B = [b];     % B - No Zero
+B = [b1];     % B - No Zero
 A = [1, a];  % A - Pole at 0.9963
 
 figure(1)
@@ -48,9 +48,9 @@ pzmap(Gp)
 figure(2)
 compare(data_test, Gp)
 %% PID Tuner - Pole Placement at 0.9952 +/- 0.0034i
-P = 4.544;
-I = 0.06689;
-b = 0.00636;
+P = 3.173;
+I = 0.08704;
+b = 0.008893;
 
 z = tf('z', Ts);
 Gc = P + I*Ts/(z-1);
@@ -78,7 +78,7 @@ step(Gyr)
 % chosen_disc_poles = ['The chosen disc. poles are: ', num2str(p1), ' and ', num2str(p0)];
 % disp(chosen_disc_poles)
 % 
-%% Diophantine Eqn A_cl = AR + BS
+% %% Diophantine Eqn A_cl = AR + BS
 % syms P I z
 % A_cl = (z+a)*((z-1)*P + I*Ts) + b*(z-1);
 % A_d = (z-p1)*(z-p0);
@@ -123,7 +123,7 @@ step(Gyr)
 % plot(t, y)
 %% The following parts are just for Simulink Usage
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%% Solve b & c for Simulink
+% %% Solve b & c for Simulink
 % syms b z
 % G_ff =  (z-1)*b*P+I*Ts;
 % G_ff_c = fliplr(coeffs(G_ff, z)); % retreive coeficients
@@ -137,5 +137,5 @@ step(Gyr)
 % b = double(sol.b)   % 0.4684
 % b = T(1)/P
 % b = -(T(2)-I*Ts)/P
-%% Get S for Simulink
+% %% Get S for Simulink
 % [S, ~] = tfdata(Gc);
