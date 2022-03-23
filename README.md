@@ -6,7 +6,7 @@ This is a repo for our Master Thesis. The code mainly done in Matlab and TwinCAT
 
 <!--ts-->
    * [Introduction](#Introduction)
-   * [Jupyter Lab Folder](#Jupyter Lab Folder)
+   * [Jupyter Lab Folder](#JupyterLab_Folder)
 
 <!--te-->
 
@@ -20,7 +20,7 @@ RQ2: Is about the further controller implementation using pole placement methods
 
 5 different linear system identification models were used: ARX, ARMAX, BJ, TF, SS.
 
-## Jupyter Lab Folder
+## JupyterLab_Folder
 * Data Pre-process
 * SI_47414
 * SI_48404
