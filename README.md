@@ -25,7 +25,7 @@ RQ2: Is about the further controller implementation using pole placement methods
 5 different linear system identification models were used: ARX, ARMAX, BJ, TF, SS.
 
 ## JupyterLab_Folder
-The purpose for the folder is for data pre-processing. Namely, reorder and extract the useful data information from the original recorded data from the testbed. There are three processed dataset: (D_47414, D_48414, D_49404), which represents the different valve operating range. In each dataset, it is then further splitted into training and testing dataset with size ratio 1:1.
+The original recoreded data from the testbed are cleaned and the useful information are extracted into three separate dataset: (D_47414, D_48414, D_49404), which represents the system data at different valve operating range. In each dataset, it is then further splitted into training and testing dataset with size ratio 1:1.
 
 SI_47414, SI_48414, SI_49404 are the system identification programs developed with JupyterLab in language Matlab for easier reading.
 
