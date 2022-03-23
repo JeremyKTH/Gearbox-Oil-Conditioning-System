@@ -25,13 +25,20 @@ RQ2: Is about the further controller implementation using pole placement methods
 5 different linear system identification models were used: ARX, ARMAX, BJ, TF, SS.
 
 ## JupyterLab_Folder
-The purpose for the folder is for data pre-processing. Namely, reorder and extract the useful data information from the original recorded data from the testbed. There are three processed dataset: (SI_47414, SI_48414, SI_49404), which represents the different valve operating range. In each dataset, it is then further splitted into training and testing dataset with size ratio 1:1.
+The purpose for the folder is for data pre-processing. Namely, reorder and extract the useful data information from the original recorded data from the testbed. There are three processed dataset: (D_47414, D_48414, D_49404), which represents the different valve operating range. In each dataset, it is then further splitted into training and testing dataset with size ratio 1:1.
+
+SI_47414, SI_48414, SI_49404 are the system identification programs developed with JupyterLab in language Matlab for easier reading.
+
 * Data Pre-process
 * SI_47414 (± 30% operating range )
 * SI_48404 (± 40% operating range )
 * SI_49404 (± 50% operating range )
 
 ## Matlab_Folder
+Best_30, Best_40, Best_50 contains all the best model structure for each system identification models at ± 30%, ± 40%, ± 50% operating range. The best 3 system identification models are picked out for research question 2. (ARMAX, SS, TF)
+
+Controller_ARMAX, Controller_SS, Controller_TF contains the controllers developed upon the top 3 models from research question 1.
+
 * Best_30
 * Best_40
 * Best_50
@@ -40,18 +47,20 @@ The purpose for the folder is for data pre-processing. Namely, reorder and extra
 * Controller_TF
 
 ## Simulink_Folder
+The simulink files are used for real time simulation of the Gearbox Oil Conditioning System as well as inspecting the controller performances.
 * Simulink_ARMAX
 * Simulink_SS
 * Simulink_TF
 
 ## TwinCAT_Folder
+The developed controllers from Matlab are transformed into compatible version for TwinCAT3 environment.
 * PI
 * PI + Pole placement
 * PID + LP
 * PID + LP + Pole placement
 
 ## Practice_Folder
-The purpose for this folder is mainly for archiving past practicing files
+The purpose for this folder is mainly for archiving past practicing files.
 
 <!-- CONTACT -->
 ## Contact
