@@ -27,7 +27,7 @@ RQ2: Is about the further controller implementation using pole placement methods
 ## JupyterLab_Folder
 The purpose for the folder is for data pre-processing. Namely, reorder and extract the useful data information from the original recorded data from the testbed. There are three processed dataset: (SI_47414, SI_48414, SI_49404), which represents the different valve operating range. In each dataset, it is then further splitted into training and testing dataset with size ratio 1:1.
 * Data Pre-process
-* SI_47414 (operating range $\pm$ 30%)
+* SI_47414 (operating range ± 30%)
 * SI_48404
 * SI_49404
 
