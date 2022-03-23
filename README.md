@@ -1,5 +1,6 @@
 # Gearbox-Oil-Conditioning-System
 This is a repo for our Master Thesis. The code mainly done in Matlab and TwinCAT 3 through jupyter Lab.
+![GOCS](https://github.com/JeremyKTH/Gearbox-Oil-Conditioning-System/blob/main/Images/GOCS.jpg)
 
 
 ## Table of contents
