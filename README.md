@@ -59,8 +59,8 @@ The simulink files are used for initial simulation of the system identification 
 The developed controllers from Matlab are transformed into compatible version for TwinCAT3 environment.
 * PI
 * PI + Pole placement
-* PID + LP
-* PID + LP + Pole placement
+* PID + Low Pass
+* PID + Low Pass + Pole placement
 
 ## Practice_Folder
 The purpose for this folder is mainly for archiving past practicing files.
