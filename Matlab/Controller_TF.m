@@ -43,11 +43,11 @@ a = den{1}(2);
 B = [b1];     % B - No Zero
 A = [1, a];  % A - Pole at 0.9963
 
-figure(1)
-pzmap(Gp)
-figure(2)
-compare(data_test, Gp)
-%% PID Tuner - Pole Placement at 0.9952 +/- 0.0034i
+% figure(1)
+% pzmap(Gp)
+% figure(2)
+% compare(data_test, Gp)
+%% PID Tuner - Pole Placement
 P = 3.173;
 I = 0.08704;
 b = 0.008893;
@@ -57,13 +57,17 @@ Gc = P + I*Ts/(z-1);
 Gff = b*P + I*Ts/(z-1);
 Gyr = Gff*Gp/(1+Gc*Gp);
 
+Gyr = minreal(Gyr, 1e-2);
+
 pole(Gyr);
 zero(Gyr);
 
 figure(3)
-pzmap(Gyr)
+pzmap(Gyr, Gp)
 figure(4)
 step(Gyr)
+[y, t] = step(Gyr);
+sserr = abs(1 - y(end))
 %% Choose Poles (w_m) (w_o)
 % %--- A_m ------
 % w_m = 0.5;

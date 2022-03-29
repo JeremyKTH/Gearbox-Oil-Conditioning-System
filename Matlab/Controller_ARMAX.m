@@ -36,8 +36,8 @@ opt.Focus = 'prediction';
 opt.SearchOptions.MaxIterations = 1000;
 opt.SearchOptions.Tolerance = 1e-5;
 sysARMAX = armax(data_train, [2 1 1 1], opt);
-Gp = tf(sysARMAX);
-
+Gp = tf(sysARMAX)
+%%
 [num, den] = tfdata(Gp);
 b1 = num{1}(2);
 b0 = num{1}(3);
@@ -49,28 +49,31 @@ A = [1, a1, a0];   % A
 % Gp_pole = pole(Gp)    % Pole: 0.9938 & 0.9880
 % Gp_zero = zero(Gp)    % Zero: 0
 % compare(data_train, sysARMAX)
-%% PID Tuner - Pole Placement at 0.9904 +/- 0.0065i
-P = 10.85;
-I = 0.1589;
-D = 168.7;
-N = 2.754;
-b = 0.06234;
-c = 0.000279;
+%% PID Tuner - Pole Placement
+P = 5.628;
+I = 0.06907;
+D = 109.2;
+N = 0.6217;
+b = 1;
+c = 1;
 
 z = tf('z', Ts);
 Gc = P + I*Ts/(z-1) + D*((N)/(1+((N*Ts)/(z-1))));
 Gff = b*P + I*Ts/(z-1) + c*D*((N)/(1+((N*Ts)/(z-1))));
 Gyr = Gff*Gp/(1+Gc*Gp);
 
-
+Gyr = minreal(Gyr, 1e-2);
 
 pole(Gyr);
 zero(Gyr);
 
 figure(3)
-pzmap(Gyr)
+pzmap(Gyr, Gp)
 figure(4)
 step(Gyr)
+[y, t] = step(Gyr);
+sserr = abs(0.8955 - y(end))
+stepinfo(Gyr)
 
 %% Choose Poles (w_m, zeta_m) (w_o, zeta_o)
 % %--- A_m ------

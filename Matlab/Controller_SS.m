@@ -45,11 +45,11 @@ a1 = den{1}(2);
 a0 = den{1}(3);
 B = [b1, b0];
 A = [1, a1, a0];
-%% PID Tuner - Pole Placement at 0.9904 +/- 0.0065i
-P = 5.701;
-I = 0.05272;
-D = 141;
-N = 4.27;
+%% PID Tuner - Pole Placement 
+P = 5.973;
+I = 0.07987;
+D = 95.85;
+N = 0.5735;
 b = 1;
 c = 1;
 
@@ -58,14 +58,16 @@ Gc = P + I*Ts/(z-1) + D*((N)/(1+((N*Ts)/(z-1))));
 Gff = b*P + I*Ts/(z-1) + c*D*((N)/(1+((N*Ts)/(z-1))));
 Gyr = Gff*Gp/(1+Gc*Gp);
 
+Gyr = minreal(Gyr, 1e-2);
 pole(Gyr);
 zero(Gyr);
 
 figure(3)
-pzmap(Gyr)
+pzmap(Gyr, Gp)
 figure(4)
 step(Gyr)
-
+[y, t] = step(Gyr);
+sserr = abs(0.7016 - y(end))
 %% ssregest()
 % sysSS = ssregest(data_train, 2);
 % Gp = tf(sysSS);
