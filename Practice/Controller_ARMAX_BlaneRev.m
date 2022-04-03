@@ -1,22 +1,24 @@
 clc
 
-%T_data = readtable('H:\Shared drives\Scania Thesis\Code\Test Data\Ts = 0.4\Training_Data\D_47414_train.csv');
-%T_train.Properties.VariableNames = {'OTSV1', 'TV12', 'TV11', 'OTGT1'};
-T_train = readtable('H:\Shared drives\Scania Thesis\Code\Test Data\Ts = 1\Training_Data\D_48404_train.csv');
-T_train.Properties.VariableNames = {'OTSV1', 'TV12', 'TV11'};
+T_train = readtable('H:\Shared drives\Scania Thesis\Code\Test Data\Ts = 0.4\Training_Data\D_48404_train.csv');
+T_train.Properties.VariableNames = {'OTSV1', 'TV12', 'TV11', 'OTGT1'};
+% T_train = readtable('H:\Shared drives\Scania Thesis\Code\Test Data\Ts = 1\Training_Data\D_48404_train.csv');
+% T_train.Properties.VariableNames = {'OTSV1', 'TV12', 'TV11'};
 
-%T_data = readtable('H:\Shared drives\Scania Thesis\Code\Test Data\Ts = 0.4\Training_Data\D_47414_test.csv');
-%T_test.Properties.VariableNames = {'OTSV1', 'TV12', 'TV11', 'OTGT1'};
-T_test = readtable('H:\Shared drives\Scania Thesis\Code\Test Data\Ts = 1\Testing_Data\D_48404_test.csv');
-T_test.Properties.VariableNames = {'OTSV1', 'TV12', 'TV11'};
+T_test = readtable('H:\Shared drives\Scania Thesis\Code\Test Data\Ts = 0.4\Testing_Data\D_48404_test.csv');
+T_test.Properties.VariableNames = {'OTSV1', 'TV12', 'TV11', 'OTGT1'};
+% T_test = readtable('H:\Shared drives\Scania Thesis\Code\Test Data\Ts = 1\Testing_Data\D_48404_test.csv');
+% T_test.Properties.VariableNames = {'OTSV1', 'TV12', 'TV11'};
 
 u_train = table2array(T_train(:, 1));   % OTSV1
 y_train = table2array(T_train(:, 2));   % TV12
 u_test =  table2array(T_test(:, 1));   % OTSV1
 y_test =  table2array(T_test(:, 2));   % TV12
 
-Ts = 1;  
-%Ts2 = .4;
+Ts = .4; %.4 For system ID
+Ts2 = .4; %1 After System ID
+Ts3 = 1; % For Simulink
+
 %% Training Data
 data_train = iddata(y_train, u_train, Ts);
 data_train.Name = 'Data_Train';
@@ -24,7 +26,7 @@ data_train.TimeUnit = 'seconds';
 data_train.InputName = 'OTSV1';   data_train.InputUnit = 'Percentage';
 data_train.OutputName = 'TV12';   data_train.OutputUnit = 'Celsius';
 
-% Testing Data
+%% Testing Data
 data_test = iddata(y_test, u_test, Ts);
 data_test.Name = 'Data_Test';
 data_test.TimeUnit = 'seconds';
@@ -44,7 +46,7 @@ data_test = detrend(data_test, T_test);
 
 cost_func = 'NRMSE';
 
-%% ARMAX
+%% ARMAX System ID
 opt = armaxOptions;
 opt.Focus = 'prediction';
 opt.SearchOptions.MaxIterations = 1000;
@@ -63,51 +65,65 @@ opt = compareOptions('InitialCondition','e');
 figure(1)
 compare(data_test, sysARMAX, opt)
 
+Gp_origin = tf(sysARMAX);
+Gp_cont = d2c(Gp_origin, 'zoh'); %converting to cont.
+
 Gp = tf(sysARMAX)
 
-[num, den] = tfdata(Gp); %2 poles, 1 zero
-b0 = num{1}(2); %zero
-a1 = den{1}(2); %pole
-a0 = den{1}(3); %pole
-B = [b0, 0];      % B
-A = [1, a1, a0];  % A
+[num, den] = tfdata(Gp_origin); %2 poles, 1 zero
+b2 = num{1}(1); %zero z^2 (0)
+b1 = num{1}(2); %zero z^1
+b0 = num{1}(3); %zero z^0 (0)
+
+a2 = den{1}(1); %polez^2 (1)
+a1 = den{1}(2); %pole z^1
+a0 = den{1}(3); %pole z^0
+
+B = [b2, b1, b0];  % B
+A = [a2, a1, a0];  % A
+
+%Changing sampling time for later
+%Gp = tf(B, A, Ts2)
 
 poles_Gp_disc = pole(Gp)
 zeros_Gp_disc = zero(Gp)
+
 figure(2)
 pzmap(Gp)
 
-Gp_cont = d2c(Gp, 'zoh') %converting to cont. 
-%Gp = c2d(Gp_cont, Ts, 'zoh')
-
-Gp_ss = tf2ss(Gp.Numerator{1},Gp.denominator{1});
-
-%% Best +/-40% Model: ARMAX
-% b0 = 3.264e-05;
-% a1 = -1.98;
-% a0 = 0.9805;
-% B = [b0, 0];      % B
-% A = [1, a1, a0];  % A
-% Ts = 0.4;
-% Gp_ar = tf(B, A, Ts);
-% poles = pole(Gp);  % 0.99 +/- 0.02i
-% zeros = zero(Gp);  % No zeros
-
-% pzmap(Gp_ar)
 %% Choose Poles (w_m, zeta_m) (w_o, zeta_o)
-%--- A_m ------
-w_m = .4; % .015 - 1.2
-zeta_m = 1;
 
-p1_m = 2*exp(-zeta_m*w_m*Ts)*cos(w_m*Ts*sqrt(1-(zeta_m)^2)); %
-p0_m = exp(-2*zeta_m*w_m*Ts);
+%---------- A_m ------------
+w_m = .040; % .1, BEST: .052
+zeta_m = .7; % BEST: .07
 
-%--- A_o ------
-w_o = .2; %350 max
-zeta_o = zeta_m;
+% Den: z^2 - (p1_o)*z + (p0_o) == 0
+p1_m = 2*exp(-zeta_m*w_m*Ts2)*cos(w_m*Ts2*sqrt(1-(zeta_m)^2)); %
+p0_m = exp(-2*zeta_m*w_m*Ts2);
 
-p1_o = 2*exp(-zeta_o*w_o*Ts)*cos(w_o*Ts*sqrt(1-(zeta_o)^2));
-p0_o = exp(-2*zeta_o*w_o*Ts);
+syms z1m z2m
+eqn1 = 2*exp(-zeta_m*w_m*Ts2)*cos(w_m*Ts2*sqrt(1-(zeta_m)^2)) == z1m + z2m;
+eqn2 = exp(-2*zeta_m*w_m*Ts2) == z1m*z2m;
+
+sol = solve([eqn1, eqn2], [z1m, z2m]);
+z1m = double(sol.z1m)
+z2m = double(sol.z2m)
+
+%---------- A_o -----------
+w_o = .32; %.4, BIGGEST MARGIN (slow): .0368
+zeta_o = 1;
+
+% Den: z^2 - (p1_o)*z + (p0_o) == 0
+p1_o = 2*exp(-zeta_o*w_o*Ts2)*cos(w_o*Ts2*sqrt(1-(zeta_o)^2));
+p0_o = exp(-2*zeta_o*w_o*Ts2);
+
+syms z1o z2o
+eqn1 = 2*exp(-zeta_o*w_o*Ts2)*cos(w_o*Ts2*sqrt(1-(zeta_o)^2)) == z1o + z2o;
+eqn2 = exp(-2*zeta_o*w_o*Ts2) == z1o*z2o;
+
+sol = solve([eqn1, eqn2], [z1o, z2o]);
+z1o = double(sol.z1o)
+z2o = double(sol.z2o)
 
 %NOTE: 
 % -Faster observer for modelling error rejection *
@@ -116,38 +132,21 @@ p0_o = exp(-2*zeta_o*w_o*Ts);
 %----------------------------------
 
 % Convert to associating discrete poles (ONLY WORK IF ZETA = 1)
-w_m_d = exp(-zeta_m*w_m*Ts);
-w_o_d = exp(-zeta_o*w_o*Ts);
-% 
-% fprintf('The original disc. poles are: 0.9915 +/- 0.0113i \n');
-% fprintf('The chosen cont. poles are: %d and %d \n', -w_m, -w_o);
-chosen_disc_poles = ['The chosen disc. poles are: ', num2str(w_m_d), ' and ', num2str(w_o_d)];
-disp(chosen_disc_poles)
+% w_m_d_T = exp(-zeta_m*w_m*Ts2)
+% w_o_d_T = exp(-zeta_o*w_o*Ts2)
 
-%% Diophantine Equ - JERMY ATTEMPT (Matlab Version)
+chosen_poles_machine = ['***The chosen disc. poles (Machine) are: ', num2str(z1m(1)),' and ', num2str(z1m(2)), '***'];
+chosen_poles_observer = ['***The chosen disc. poles (Observer) are: ', num2str(z1o(1)),' and ', num2str(z1o(2)), '***'];
 
-% syms P I D N z
-% A_cl = (z^2+a1_ar*z+a0_ar)*(z-1)*(z-1+N*Ts) + (b0_ar*z)*((z-1)*(z-1+N*Ts)*P+(z-1+N*Ts)*I*Ts+(z-1)^2*D*N);
-% A_d = (z^2-p1_m*z+p0_m)*(z^2-p1_o*z+p0_o);
-% A_cl_c = fliplr(coeffs(A_cl, z)); % retreive coeficients
-% A_d_c = fliplr(coeffs(A_d, z));   % retreive coeficients
-
-% equ1 = A_cl_c(2) == A_d_c(2); % z^3
-% equ2 = A_cl_c(3) == A_d_c(3); % z^2
-% equ3 = A_cl_c(4) == A_d_c(4); % z^1
-% equ4 = A_cl_c(5) == A_d_c(5); % z^0
-% 
-% sol = solve([equ1, equ2, equ3, equ4], [P, I, D, N]);
-% 
-% P = double(sol.P)   % 3151.3
-% I = double(sol.I)   % 696.698
-% D = double(sol.D)   % 4933.2
-% N = double(sol.N)   % 3.2468
+disp(chosen_poles_machine)
+disp(chosen_poles_observer)
 
 %% Diophantine Equ - BLANE ATTEMPT (DMC Version)
 syms S2 S1 S0 r0 z
-A_cl = (z^2+a1*z+a0)*(z-1)*(z+r0) + (b0*z)*(S2*z^2 + S1*z + S0);
-A_d = (z^2-p1_m*z+p0_m)*(z^2-p1_o*z+p0_o);
+A_cl = (z^2+a1*z+a0)*(z-1)*(z+r0) + (b1*z + b0)*(S2*z^2 + S1*z + S0);
+A_m = (z^2-p1_m*z+p0_m);
+A_o = (z^2-p1_o*z+p0_o);
+A_d = A_m*A_o;
 A_cl_c = fliplr(coeffs(A_cl, z)); % retreive coeficients
 A_d_c = fliplr(coeffs(A_d, z));
 
@@ -164,48 +163,38 @@ S0 = double(sol.S0);   %
 r0 = double(sol.r0);   % 
 
 %% Controller TF - Gc (S/R)
-%z = tf('z', Ts);
-% Gc = P + I*Ts/(z-1) + D*(N)/(1+(N*Ts)/(z-1)); %FOR JEREMY'S WAY
+%z = tf('z', Ts2);
+% Gc = P + I*Ts2/(z-1) + D*(N)/(1+(N*Ts2)/(z-1)); %FOR JEREMY'S WAY
 
 S = [S2, S1, S0];
 R = [1, r0-1, -r0];
 
-Gc = tf(S, R, Ts)
-
+Gc = tf(S, R, Ts2)
 %% Gff (T/R) and Gyr
 
-% %------FOR JEREMY'S WAY-------
-% t_o = (1-p1_m+p0_m)/(b0_ar);
-% A_o = [1, -p1_o, p0_o];
-% T = t_o*A_o;
-% R = [1, N*Ts-2, 1-N*Ts];
-% Gff = tf(T, R, Ts);
-
-%------FOR BLANE'S WAY-------
-t_o = (1-p1_m+p0_m)/(b0);
+t_o = (1-p1_m+p0_m)/(b1 + b0);
 A_o = [1, -p1_o, p0_o];
+A_m = [1, -p1_m, p0_m];
 T = t_o*A_o;
 R = [1, r0-1, -r0];
 
-Gff = tf(T, R, Ts);
+Gff = tf(T, R, Ts2);
 
 %% MATLAB PID TUNER SUBSTITUTION
 
 % (EULER FORWARD)
 syms P I D N 
 equ1 = S2 == P + (D*N);
-%equ2 = S1 == (I*Ts) + (P*N*Ts) - (2*P) - (2*D*N);
-equ2 = S1 == (P*N*Ts) - (2*P) + (I*Ts) - (2*D*N);
-%equ3 = S0 == (P-P*N*Ts) + (I*Ts) + (I*N*(Ts^2)) + (D*N);
-equ3 = S0 == (I*N*(Ts^2)) - (I*Ts) + (D*N) - (P*N*Ts) + P;
-equ4 = r0 ==(N*Ts)-1;
+equ2 = S1 == (P*N*Ts2) - (2*P) + (I*Ts2) - (2*D*N);
+equ3 = S0 == (I*N*(Ts2^2)) - (I*Ts2) + (D*N) - (P*N*Ts2) + P;
+equ4 = r0 ==(N*Ts2)-1;
 
 sol = solve([equ4, equ1, equ2, equ3], [N, P, I, D]);
 
-N = double(sol.N)
 P = double(sol.P)
 I = double(sol.I)
 D = double(sol.D)
+N = double(sol.N)
 
 % ----- Getting b & c terms for Simulink ------------
 %b = "set point weight for proportional term
@@ -213,10 +202,10 @@ D = double(sol.D)
 
 syms b c z
 % EULEER FORWARD VERSION:
-G_ff_PID = (P*b*(z-1)*(z-1+N*Ts)) + (I*Ts*(z-1+N*Ts)) + (D*N*c*(z-1)^2);
+G_ff_PID = (P*b*(z-1)*(z-1+N*Ts2)) + (I*Ts2*(z-1+N*Ts2)) + (D*N*c*(z-1)^2);
 
 % EULER BACKWARD VERSION
-%G_ff_PID = (P*b*(z-1)*(z-1+N*Ts*z)) + (I*Ts*(z-1+N*Ts*z)) + (D*N*c*(z-1)^2);
+%G_ff_PID = (P*b*(z-1)*(z-1+N*Ts2*z)) + (I*Ts2*(z-1+N*Ts2*z)) + (D*N*c*(z-1)^2);
 
 G_ff_c = fliplr(coeffs(G_ff_PID, z)); % retreive coeficients
 
@@ -228,21 +217,16 @@ sol = solve([equ1, equ3], [b, c]);
 
 b = double(sol.b)  
 c = double(sol.c)  
- 
-%                     b       c            
-% w_m = .015 (SLOW):  .0075   2.2977e-308    
-% w_m =               
 
+%% PP closed loop check (Gyr)
 
-% % Get S for Simulink
-% [S, ~] = tfdata(Gc);
+disp('---------- *** RESULTS - POLE PLACEMENT *** ------------')
 
-%% Entire closed loop check (Gyr)
-Gyr = Gff*Gp/(1+Gc*Gp)
-poles_Gyr = pole(Gyr)
-zeros_Gyr = zero(Gyr)
+Gyr = Gff*Gp/(1+Gc*Gp);
+poles_Gyr = pole(Gyr);
+zeros_Gyr = zero(Gyr);
 
-Gyr = minreal(Gyr, 1e-5)
+Gyr = minreal(Gyr, 1e-3)
 poles_Gyr_min = pole(Gyr)
 zeros_Gyr_min = zero(Gyr)
 
@@ -250,9 +234,11 @@ figure(3)
 pzmap(Gyr)
 
 figure(4)
-step(Gyr)
 grid on
+step(Gyr)
 
+[y, t] = step(Gyr);
+sserr = abs(1 - y(end))
 stepinfo(Gyr)
 
 %% AntiWindup Changes
@@ -287,50 +273,88 @@ figure(5)
 bode(S_e, T_e)
 legend('Sensitivity Ftn', 'Comp. Sensitivity Ftn')
 
+figure(6)
+margin(Gyr)
 %% PID Tuner Parameter Method
 
-% % SLOW (301, .675):
-% P_tun = 0.74632;
-% I_tun = .020669;
-% D_tun = 0;
-% N_tun = 0;
-% b_tun = 1;
-% c_tun = 1;
-% % k_ant = 5;
+disp('------------- *** RESULTS - PID TUNER *** --------------')
 
-% % MED (52.36, .837):
-% P_tun = 11.294;
-% I_tun = .13611;
-% D_tun = 202.6788;
-% N_tun = .72905;
-% b_tun = .021202;
-% c_tun = .00014394;
-% % k_ant = 2.5;
+% % Test 1:
+% P_tun = 57.8342;
+% I_tun = 1.6525;
+% D_tun = 823.7774;
+% N_tun = 0.5153;
+% b_tun = 0.1603;
+% c_tun = 0.0068;
+% % k_ant = 1;
 
-% FAST (9.53, .702):
-P_tun = 99.0869;
-I_tun = 1.5358;
-D_tun = 1069.1914;
-N_tun = 1.3703;
-b_tun = .79059;
-c_tun = .050636;
-% k_ant = .32;
+% % Test 2:
+% P_tun = 57.5573;
+% I_tun = 1.5134;
+% D_tun= 923.3159;
+% N_tun = .5725;
+% b_tun = .1292;
+% c_tun = .0041;
+% % k_ant = 1;
+
+% % Test 3:
+% P_tun = ;
+% I_tun = ;
+% D_tun= ;
+% N_tun = ;
+% b_tun = ;
+% c_tun = ;
+% % k_ant = ;
+
+% Jeremy:
+P_tun = 5.628;
+I_tun = .06907;
+D_tun= 109.2;
+N_tun = .6217;
+b_tun = 1;
+c_tun = 1;
+% k_ant = .012;
+
+% %//////////////// Simulink "Tuner"  /////////////////:
+% P_tun  = 49.0796;
+% I_tun  = 1.2307;
+% D_tun  = 827.2157;
+% N_tun  = 0.6915;
+% b_tun  = 0.1411;
+% c_tun  = 0.0065;
+%  % k_ant = 0.08;
+
+% %///////////////////////////////////////////////
 
 % Euler Forward:
-z = tf('z', Ts);
-Gc_tun = P_tun + I_tun*Ts/(z-1) + D_tun*((N_tun)/(1+((N_tun*Ts)/(z-1))));
-Gff_tun = b_tun*P_tun + I_tun*Ts/(z-1) + c_tun*D_tun*((N_tun)/(1+((N_tun*Ts)/(z-1))));
+z = tf('z', Ts2);
+Gc_tun = P_tun + I_tun*Ts2/(z-1) + D_tun*((N_tun)/(1+((N_tun*Ts2)/(z-1))));
+Gff_tun = b_tun*P_tun + I_tun*Ts2/(z-1) + c_tun*D_tun*((N_tun)/(1+((N_tun*Ts2)/(z-1))));
 Gyr_tun = Gff_tun*Gp/(1+Gc_tun*Gp);
-Gyr_tun = minreal(Gyr_tun, 1e-5);
+
+Gyr_tun = minreal(Gyr_tun, 1e-2);
 
 pole_tun = pole(Gyr_tun)
 zero_tun = zero(Gyr_tun)
 
-figure(6)
-pzmap(Gyr_tun)
-figure(7)
-step(Gyr_tun)
+% figure(7)
+% pzmap(Gyr_tun)
+% 
+% figure(8)
+% grid on
+% step(Gyr_tun)
 
+[y, t] = step(Gyr_tun);
+stepinfo(Gyr_tun)
+sserr = abs(1 - y(end))
 
+S_e = 1/(1 + Gp*Gc_tun);
+T_e = 1 - S_e;
 
+% figure(9)
+% bode(S_e, T_e)
+% legend('Sensitivity Ftn', 'Comp. Sensitivity Ftn')
+% 
+% figure(10)
+% margin(Gyr)
 

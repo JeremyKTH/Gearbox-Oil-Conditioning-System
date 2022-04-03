@@ -15,8 +15,9 @@ y_train = table2array(T_train(:, 2));   % TV12
 u_test =  table2array(T_test(:, 1));   % OTSV1
 y_test =  table2array(T_test(:, 2));   % TV12
 
-Ts = .4;  
-Ts2 = 1;
+Ts = .4; %.4 For system ID
+Ts2 = .4; %1 After System ID
+Ts3 = 1; % For Simulink
 
 %% Training Data
 data_train = iddata(y_train, u_train, Ts);
@@ -45,7 +46,6 @@ data_test = detrend(data_test, T_test);
 
 cost_func = 'NRMSE';
 
-
 %% SS System Identification
 
 sysSS = n4sid(data_train, 2, 'Ts', Ts);
@@ -56,6 +56,7 @@ figure(1)
 compare(data_test, sysSS, opt)
 
 Gp_origin = tf(sysSS);
+Gp_cont = d2c(Gp_origin, 'zoh'); %converting to cont.
 
 [num, den] = tfdata(Gp_origin); %2 poles, 1 zero
 b2 = num{1}(1); %z^2 (0)
@@ -66,7 +67,7 @@ a2 = den{1}(1); %z^2 (1)
 a1 = den{1}(2); %pole z^1
 a0 = den{1}(3); %pole z^0
 
-B = [b1, b0];  % B
+B = [b2, b1, b0];  % B
 A = [a2, a1, a0];  % A
 
 %Changing sampling time for later
@@ -78,14 +79,14 @@ zeros_Gp_disc = zero(Gp)
 figure(2)
 pzmap(Gp)
 
-Gp_cont = d2c(Gp, 'zoh'); %converting to cont. 
+ 
 %Gp = c2d(Gp_cont, Ts, 'zoh')
 
 %% Choose Poles (w_m, zeta_m) (w_o, zeta_o)
 
 %---------- A_m ------------
-w_m = .052; % .1,
-zeta_m = .7;
+w_m = .04; % .1, BEST: .052
+zeta_m = .7; % BEST: .07
 
 % z^2 
 p1_m = 2*exp(-zeta_m*w_m*Ts2)*cos(w_m*Ts2*sqrt(1-(zeta_m)^2)); %
@@ -100,8 +101,8 @@ z1m = double(sol.z1m)
 z2m = double(sol.z2m)
 
 %---------- A_o -----------
-w_o = .07; %.4, 
-zeta_o = zeta_m;
+w_o = .3; %.4, BIGGEST MARGIN (slow): .0368
+zeta_o = .7;
 
 % Den: z^2 - (p1_o)*z + (p0_o) == 0
 p1_o = 2*exp(-zeta_o*w_o*Ts2)*cos(w_o*Ts2*sqrt(1-(zeta_o)^2));
@@ -143,7 +144,9 @@ disp(chosen_poles_observer)
 %% Diophantine Equ - BLANE ATTEMPT (DMC Version)
 syms S2 S1 S0 r0 z
 A_cl = (z^2+a1*z+a0)*(z-1)*(z+r0) + (b1*z + b0)*(S2*z^2 + S1*z + S0);
-A_d = (z^2-p1_m*z+p0_m)*(z^2-p1_o*z+p0_o);
+A_m = (z^2-p1_m*z+p0_m);
+A_o = (z^2-p1_o*z+p0_o);
+A_d = A_m*A_o;
 A_cl_c = fliplr(coeffs(A_cl, z)); % retreive coeficients
 A_d_c = fliplr(coeffs(A_d, z));
 
@@ -172,6 +175,7 @@ Gc = tf(S, R, Ts2)
 
 t_o = (1-p1_m+p0_m)/(b1 + b0);
 A_o = [1, -p1_o, p0_o];
+A_m = [1, -p1_m, p0_m];
 T = t_o*A_o;
 R = [1, r0-1, -r0];
 
@@ -223,7 +227,7 @@ Gyr = Gff*Gp/(1+Gc*Gp);
 poles_Gyr = pole(Gyr);
 zeros_Gyr = zero(Gyr);
 
-Gyr = minreal(Gyr, 1e-2)
+Gyr = minreal(Gyr, 1e-3)
 poles_Gyr_min = pole(Gyr)
 zeros_Gyr_min = zero(Gyr)
 
@@ -276,66 +280,42 @@ figure(6)
 margin(Gyr)
 %% PID Tuner Parameter Method
 
-% % SLOW (279,.72) ~ 400 sec settling:
-% P_tun = 1.0665;
-% I_tun = .021406;
-% D_tun = 0;
-% N_tun = 0;
+% Jeremy ("Poles: .781, .991"):
+% P_tun = 5.973;
+% I_tun = 0.07987;
+% D_tun = 95.85;
+% N_tun = 0.5735;
 % b_tun = 1;
 % c_tun = 1;
-% % k_ant = 2.8;
-
-% % MED (88.12, .6) ~ 300 sec settling:
-% P_tun = 5.589;
-% I_tun = .080445;
-% D_tun = 69.3573;
-% N_tun = .88551;
-% b_tun = .022431;
-% c_tun = 8.8241e-05;
 % % k_ant = 2.2;
 
-% % FAST (23.18, .72):
-% P_tun = 19.8114;
-% I_tun = .1883;
-% D_tun = 483.883;
-% N_tun = 1.6041;
-% b_tun = 1;
-% c_tun = 1;
-% % k_ant = .015;
+% Jeremy 2 ("Poles: .781, .991"):
+% Ts = 1;
+P_tun = 7.185;
+I_tun = .1006;
+D_tun = 126.3;
+N_tun = .5253;
+b_tun = .04062;
+c_tun = .0007977;
+% Kant = 2.2;
 
-% % Test (23.18, .622):
-% P_tun = 18.9039;
-% I_tun = .23283;
-% D_tun = 352.9657;
-% N_tun = 3.1466;
-% b_tun = .5117;
-% c_tun = .0054235;
-% % k_ant = ;
-
-% Jeremy ("Poles: .781, .991"):
-P_tun = 5.973;
-I_tun = 0.07987;
-D_tun = 95.85;
-N_tun = 0.5735;
-b_tun = 1;
-c_tun = 1;
-% k_ant = 2.2;
-
-% %//////////////// NEW (Ts = .4) /////////////////:
-% P_tun = 5.9667;
-% I_tun = 0.033382;
-% D_tun = 252.5547;
-% N_tun = 1.4339;
-% b_tun = .01801;
-% c_tun = .00010514;
-%  % k_ant = ;
+% %//////////////// Simulink "Tuner"  /////////////////:
+% P_tun  = 49.0796;
+% I_tun  = 1.2307;
+% D_tun  = 827.2157;
+% N_tun  = 0.6915;
+% b_tun  = 0.1411;
+% c_tun  = 0.0065;
+%  % k_ant = 0.08;
 
 % %///////////////////////////////////////////////
 
+% Euler Fwd:
 z = tf('z', Ts2);
 Gc_tun = P_tun + I_tun*Ts2/(z-1) + D_tun*((N_tun)/(1+((N_tun*Ts2)/(z-1))));
 Gff_tun = b_tun*P_tun + I_tun*Ts2/(z-1) + c_tun*D_tun*((N_tun)/(1+((N_tun*Ts2)/(z-1))));
 Gyr_tun = Gff_tun*Gp/(1+Gc_tun*Gp);
+
 Gyr_tun = minreal(Gyr_tun, 1e-2);
 
 pole_tun = pole(Gyr_tun)

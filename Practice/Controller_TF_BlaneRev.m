@@ -1,22 +1,23 @@
 clc
 
-%T_data = readtable('H:\Shared drives\Scania Thesis\Code\Test Data\Ts = 0.4\Training_Data\D_47414_train.csv');
-%T_train.Properties.VariableNames = {'OTSV1', 'TV12', 'TV11', 'OTGT1'};
-T_train = readtable('H:\Shared drives\Scania Thesis\Code\Test Data\Ts = 1\Training_Data\D_48404_train.csv');
-T_train.Properties.VariableNames = {'OTSV1', 'TV12', 'TV11'};
+T_train = readtable('H:\Shared drives\Scania Thesis\Code\Test Data\Ts = 0.4\Training_Data\D_48404_train.csv');
+T_train.Properties.VariableNames = {'OTSV1', 'TV12', 'TV11', 'OTGT1'};
+% T_train = readtable('H:\Shared drives\Scania Thesis\Code\Test Data\Ts = 1\Training_Data\D_48404_train.csv');
+% T_train.Properties.VariableNames = {'OTSV1', 'TV12', 'TV11'};
 
-%T_data = readtable('H:\Shared drives\Scania Thesis\Code\Test Data\Ts = 0.4\Training_Data\D_47414_test.csv');
-%T_test.Properties.VariableNames = {'OTSV1', 'TV12', 'TV11', 'OTGT1'};
-T_test = readtable('H:\Shared drives\Scania Thesis\Code\Test Data\Ts = 1\Testing_Data\D_48404_test.csv');
-T_test.Properties.VariableNames = {'OTSV1', 'TV12', 'TV11'};
+T_test = readtable('H:\Shared drives\Scania Thesis\Code\Test Data\Ts = 0.4\Testing_Data\D_48404_test.csv');
+T_test.Properties.VariableNames = {'OTSV1', 'TV12', 'TV11', 'OTGT1'};
+% T_test = readtable('H:\Shared drives\Scania Thesis\Code\Test Data\Ts = 1\Testing_Data\D_48404_test.csv');
+% T_test.Properties.VariableNames = {'OTSV1', 'TV12', 'TV11'};
 
 u_train = table2array(T_train(:, 1));   % OTSV1
 y_train = table2array(T_train(:, 2));   % TV12
 u_test =  table2array(T_test(:, 1));   % OTSV1
 y_test =  table2array(T_test(:, 2));   % TV12
 
-Ts = 1;  
-delay = 0; %**Need at 0 or cant consider for poles**
+Ts = .4; % .4 For system ID
+Ts2 = .4; % After System ID
+Ts3 = 1; % For Simulink
 
 %% Training Data
 data_train = iddata(y_train, u_train, Ts);
@@ -25,7 +26,7 @@ data_train.TimeUnit = 'seconds';
 data_train.InputName = 'OTSV1';   data_train.InputUnit = 'Percentage';
 data_train.OutputName = 'TV12';   data_train.OutputUnit = 'Celsius';
 
-% Testing Data
+%% Testing Data
 data_test = iddata(y_test, u_test, Ts);
 data_test.Name = 'Data_Test';
 data_test.TimeUnit = 'seconds';
@@ -44,10 +45,12 @@ data_train = detrend(data_train, T_train);
 data_test = detrend(data_test, T_test);
 
 cost_func = 'NRMSE';
+
 %% TF ESTIMATE [1 1]
 
 opt = tfestOptions;
 opt.InitializeMethod = 'all';
+opt.InitialCondition = 'estimate' %Jeremy using in his code uploaded
 opt.Focus = 'prediction';
 opt.SearchOptions.MaxIterations = 1000; 
 opt.Display = 'on';
@@ -55,41 +58,45 @@ opt.Display = 'on';
 
 np = 1;          % Num of pole
 nz = 1;          % Num of zero
-iodelay = delay;   % In/Out delay
+iodelay = 0;     % **Need at 0 or cant consider for poles**
 
 sysTF = tfest(data_train, np, nz, opt, iodelay, 'Ts', Ts);
 
 opt = compareOptions('InitialCondition','e');
+
 figure(1)
 compare(data_test, sysTF, opt);
 
 Gp = tf(sysTF)
+Gp_cont = d2c(Gp, 'zoh'); %converting to cont.
 
 [num, den] = tfdata(Gp); %2 poles, 1 zero
-b1 = num{1}(1); %zero
-b0 = num{1}(2);
-a1 = den{1}(1); %pole
-a0 = den{1}(2); %pole
-B = [b1 b0];      % B
+b1 = num{1}(1);     % zero z^1 (0)
+b0 = num{1}(2);     % zero z^0 
+
+a1 = den{1}(1);     % pole z^1 (1)
+a0 = den{1}(2);     % pole z^0
+
+B = [b1, b0];        % B
 A = [a1, a0];  % A
+
+%Changing sampling time for later
+Gp_conv = tf(B, A, Ts2)
 
 poles_Gp_disc = pole(Gp)
 zeros_Gp_disc = zero(Gp)
+
 figure(2)
 pzmap(Gp)
-
-Gp_cont = d2c(Gp, 'zoh') %converting to cont. 
-%Gp = c2d(Gp_cont, Ts, 'zoh')
-%Gp_ss = tf2ss(Gp.Numerator{1},Gp.denominator{1});
 
 
 %% Choose Poles (z+p_m)(z+p_o)
 %--- A_m ------
-a_m = .05; % continuous pole (s + a) .9(fast)---
+a_m = .055; % continuous pole (s + a) .9(fast)---
 p_m = exp(-a_m*Ts); % convert to discrete
 
 %--- A_o ------
-a_o = .6; % continuous pole (s + a)
+a_o = .12; % continuous pole (s + a)
 p_o = exp(-a_o*Ts); % convert to discrete
 
 %NOTE: 
@@ -97,8 +104,7 @@ p_o = exp(-a_o*Ts); % convert to discrete
 % -Slower observer for filtering high frequency noise
 
 %----------------------------------
-% fprintf('The original disc. poles are: 0.9915 +/- 0.0113i \n');
-% fprintf('The chosen cont. poles are: %d and %d \n', -w_m, -w_o);
+
 chosen_disc_poles = ['**The chosen disc. poles are: ', num2str(p_m), '(machine) and ', num2str(p_o), '(observer)**'];
 disp(chosen_disc_poles)
 
@@ -119,8 +125,6 @@ sol = solve([equ2, equ3], [S1, S0]);
 S1 = double(sol.S1);   % 
 S0 = double(sol.S0);   % 
 %% Controller TF - Gc (S/R)
-%z = tf('z', Ts);
-% Gc = P + I*Ts/(z-1) + D*(N)/(1+(N*Ts)/(z-1)); %FOR JEREMY'S WAY
 
 S = [S1, S0];
 R = [1, -1];
@@ -129,20 +133,13 @@ Gc = tf(S, R, Ts)
 
 %% Gff (T/R) and Gyr
 
-% %------FOR JEREMY'S WAY-------
-% t_o = (1-p1_m+p0_m)/(b0_ar);
-% A_o = [1, -p1_o, p0_o];
-% T = t_o*A_o;
-% R = [1, N*Ts-2, 1-N*Ts];
-% Gff = tf(T, R, Ts);
-
-%------FOR BLANE'S WAY-------
 t_o = (1 - p_m)/b0;
 A_o = [1, -p_o];
+
 T = t_o*A_o;
 R = [1, -1];
 
-Gff = tf(T, R, Ts)
+Gff = tf(T, R, Ts);
 
 %% MATLAB PID TUNER SUBSTITUTION
 
@@ -156,9 +153,8 @@ sol = solve([equ1, equ2], [P, I]);
 P = double(sol.P)
 I = double(sol.I)
 
-% ----- Getting b & c terms for Simulink ------------
+% ----- Getting b term for Simulink ------------
 %b = "set point weight for proportional term
-%c = "set point weight for deriviative term
 
 syms b z
 % EULEER FORWARD VERSION:
@@ -180,11 +176,14 @@ b = double(sol)
 % [S, ~] = tfdata(Gc);
 
 %% Entire closed loop check (Gyr)
-Gyr = Gff*Gp/(1+Gc*Gp)
-poles_Gyr = pole(Gyr)
-zeros_Gyr = zero(Gyr)
 
-Gyr = minreal(Gyr, 1e-5)
+disp('---------- *** RESULTS - POLE PLACEMENT *** ------------')
+
+Gyr = Gff*Gp/(1+Gc*Gp)
+% poles_Gyr = pole(Gyr)
+% zeros_Gyr = zero(Gyr)
+
+Gyr = minreal(Gyr, 1e-3)
 poles_Gyr_min = pole(Gyr)
 zeros_Gyr_min = zero(Gyr)
 
@@ -192,15 +191,12 @@ figure(3)
 pzmap(Gyr)
 
 figure(4)
-step(Gyr)
 grid on
+step(Gyr)
 
+[y, t] = step(Gyr);
+sserr = abs(1 - y(end))
 stepinfo(Gyr)
-
-%% AntiWindup Changes
-
-%K_ant = 2.6; %antiwindup coefficient
-
 
 %% Sensitivy Analysis
 
@@ -211,36 +207,74 @@ figure(5)
 bode(S_e, T_e)
 legend('Sensitivity Ftn', 'Comp. Sensitivity Ftn')
 
+figure(6)
+margin(Gyr)
+
 %% PID Tuner Parameter Method
 
-% % SLOW (371, .675):
-% P_tun = .4614;
-% I_tun = .001762;
-% b_tun = .02174;
+disp('------------- *** RESULTS - PID TUNER *** --------------')
 
-% % MED (64.46, .675):
-% P_tun = 7.933;
-% I_tun = .01915;
-% b_tun = .02739;
+% % Test 1 ():
+% P_tun = 48.9757;
+% I_tun = 1.6241;
+% b_tun = .2618;
+% % k_ant = 1;
 
-% FAST (11.73, .666):
-P_tun = 50.5;
-I_tun = 3.308;
-b_tun = .01154;
+% % Test 2 ():
+% P_tun = 49.9724;
+% I_tun = .9620;
+% b_tun = .3351;
+% % k_ant = 1;
+
+% Test 3 ():
+% P_tun = ;
+% I_tun = ;
+% b_tun = ;
+% % k_ant = ;
+
+% Jeremy ():
+P_tun = 3.173;
+I_tun = 0.08704;
+b_tun = 0.008893;
+% k_ant = ;
+
+% %//////////////// Simulink "Tuner"  /////////////////:
+% P_tun  = ;
+% I_tun  = ;
+% b_tun  = ;
+% % k_ant = ;
+
+% %///////////////////////////////////////////////
 
 % Euler Forward:
-z = tf('z', Ts);
-Gc_tun = P_tun  + I_tun*Ts/(z-1);
-Gff_tun = b_tun *P_tun  + I_tun *Ts/(z-1);
+z = tf('z', Ts2);
+Gc_tun = P_tun  + I_tun*Ts2/(z-1);
+Gff_tun = b_tun*P_tun  + I_tun *Ts2/(z-1);
 Gyr_tun = Gff_tun*Gp/(1+Gc_tun*Gp);
 Gyr_tun = minreal(Gyr_tun, 1e-5);
 
 pole_tun = pole(Gyr_tun)
 zero_tun = zero(Gyr_tun)
 
-figure(6)
-pzmap(Gyr_tun)
-figure(7)
-step(Gyr_tun)
+% figure(7)
+% pzmap(Gyr_tun)
+% 
+% figure(8)
+% grid on
+% step(Gyr_tun)
+
+[y, t] = step(Gyr_tun);
+stepinfo(Gyr_tun)
+sserr = abs(1 - y(end))
+
+S_e = 1/(1 + Gp*Gc_tun);
+T_e = 1 - S_e;
+
+% figure(9)
+% bode(S_e, T_e)
+% legend('Sensitivity Ftn', 'Comp. Sensitivity Ftn')
+% 
+% figure(10)
+% margin(Gyr)
 
 
