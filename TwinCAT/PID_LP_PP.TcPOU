@@ -85,7 +85,7 @@ fP := kp*(bff*fSetp - fAct);
 
 
 // D
-fDErr := fStep*cff - fAct;
+fDErr := fSetp*cff - fAct;
 fD := fDPrev/(1+Tf*fPeriod) + kd*Tf*(fDErr-fDErrPrev);
 
 // I
