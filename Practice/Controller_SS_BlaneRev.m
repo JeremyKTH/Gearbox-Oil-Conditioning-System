@@ -85,8 +85,8 @@ pzmap(Gp)
 %% Choose Poles (w_m, zeta_m) (w_o, zeta_o)
 
 %---------- A_m ------------
-w_m = .04; % .1, BEST: .052
-zeta_m = .7; % BEST: .07
+w_m = .05; % (.027 IS SLOWEST w/ .7 zeta) (.021 IS SLOWEST w/ 1 zeta)
+zeta_m = 1; % BEST: .07
 
 % z^2 
 p1_m = 2*exp(-zeta_m*w_m*Ts2)*cos(w_m*Ts2*sqrt(1-(zeta_m)^2)); %
@@ -101,8 +101,8 @@ z1m = double(sol.z1m)
 z2m = double(sol.z2m)
 
 %---------- A_o -----------
-w_o = .3; %.4, BIGGEST MARGIN (slow): .0368
-zeta_o = .7;
+w_o = .027; %.02 is smallest
+zeta_o = 1.00;
 
 % Den: z^2 - (p1_o)*z + (p0_o) == 0
 p1_o = 2*exp(-zeta_o*w_o*Ts2)*cos(w_o*Ts2*sqrt(1-(zeta_o)^2));
@@ -227,7 +227,7 @@ Gyr = Gff*Gp/(1+Gc*Gp);
 poles_Gyr = pole(Gyr);
 zeros_Gyr = zero(Gyr);
 
-Gyr = minreal(Gyr, 1e-3)
+Gyr = minreal(Gyr, 1e-2)
 poles_Gyr_min = pole(Gyr)
 zeros_Gyr_min = zero(Gyr)
 
@@ -239,7 +239,7 @@ grid on
 step(Gyr)
 
 [y, t] = step(Gyr);
-sserr = abs(1 - y(end))
+sserr = abs(1 - y(end));
 stepinfo(Gyr)
 
 %% AntiWindup Changes
@@ -318,18 +318,18 @@ Gyr_tun = Gff_tun*Gp/(1+Gc_tun*Gp);
 
 Gyr_tun = minreal(Gyr_tun, 1e-2);
 
-pole_tun = pole(Gyr_tun)
-zero_tun = zero(Gyr_tun)
+pole_tun = pole(Gyr_tun);
+zero_tun = zero(Gyr_tun);
 
-figure(7)
-pzmap(Gyr_tun)
-
-figure(8)
-grid on
-step(Gyr_tun)
+% figure(7)
+% pzmap(Gyr_tun)
+% 
+% figure(8)
+% grid on
+% step(Gyr_tun)
 
 [y, t] = step(Gyr_tun);
-stepinfo(Gyr_tun)
-sserr = abs(1 - y(end))
+stepinfo(Gyr_tun);
+sserr = abs(1 - y(end));
 
 

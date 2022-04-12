@@ -92,11 +92,11 @@ pzmap(Gp)
 
 %% Choose Poles (z+p_m)(z+p_o)
 %--- A_m ------
-a_m = .055; % continuous pole (s + a) .9(fast)---
+a_m = .022; % continuous pole (s + a) .9(fast)---
 p_m = exp(-a_m*Ts); % convert to discrete
 
 %--- A_o ------
-a_o = .12; % continuous pole (s + a)
+a_o = .018; % continuous pole (s + a)
 p_o = exp(-a_o*Ts); % convert to discrete
 
 %NOTE: 
