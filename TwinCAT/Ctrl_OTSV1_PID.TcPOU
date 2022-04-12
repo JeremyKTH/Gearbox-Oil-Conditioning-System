@@ -1,0 +1,223 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4024.6">
+  <POU Name="Ctrl_OTSV1_PID" Id="{655dc200-ae42-4dc5-b5aa-27be25dde1e6}" SpecialFunc="None">
+    <Declaration><![CDATA[PROGRAM Ctrl_OTSV1_PID
+VAR
+	bFirst:BOOL:=TRUE;			// First time or restarted
+	fSetp:LREAL;				// Setpoint
+	fAct:LREAL;					// Actual value
+	fErr:LREAL;					// Error between setpoint and Actual
+	fSumErr:LREAL;				// Integrator 
+	fDeriv:LREAL;				// Differential since last
+	fPrevErr:LREAL; 			// Previous Error
+	fIntActLimit:LREAL:=0.0;	// Degrees from setpoint where Integration of Error is active
+	fMaxInt:LREAL; 				// To Prevent Int. WindUp
+	fMinInt:LREAL; 				// To Prevent Int. WindUp
+	fOut:LREAL;					// Calculated output
+	//////////////////////////////////////////////
+	kp:LREAL; //:=2.0; :=57.5573; //ARMAX :=61.3832; //SS
+	ki:LREAL; //:=1.0; :=1.5134; //ARMAX :=1.6135; //SS
+	kd:LREAL; //:=0.25; :=923.3159; //ARMAX :=1028.1; //SS
+	//////////////////////////////////////////////
+	fPeriod:LREAL:=1;		//Periodtid
+	One_Shot: BOOL;
+	One_Shot_fSetp: LREAL;
+	fOut_limit: LREAL;
+	Diff: LREAL;
+	count: INT;
+	count1: INT;
+	GT1Diff: LREAL;
+	GT4Diff: LREAL;
+	fOut_compare: LREAL;
+	count_gw: INT;
+	count_P160: INT;
+	count_TV11: INT;
+	count_TV12: INT;
+	count_OTGT1: INT;
+	count_gz: INT;
+	
+	////////////////////// JEREMY ////////////////////////
+    // Newly Added
+    fP:LREAL;               // P term signal
+    fI:LREAL;               // I term signal
+    fD:LREAL;               // D term signal
+    fIA:LREAL;              // Ant after I
+
+    bff:LREAL:=0.1292;      // feedforward b for P :=0.1292; //ARMAX :=0.0852; //SS
+    cff:LREAL:=0.0041;      // feedforward c for D :=0.0041; //ARMAX :=0.0097; //S
+    
+    fDPrev:LREAL;           // Previous D term signal
+    fIPrev:LREAL;           // Previous I term signal
+    fIAPrev:LREAL;          // Previous IA term signal
+
+    fDErr:LREAL;            // fStep*c - fAct
+    fDErrPrev:LREAL;        // Previous fStep*c - fAct
+
+    fant:LREAL;             // Ant before I
+    fSum:LREAL;             // fP + fI + fD + fIA
+
+    Tf:LREAL:=0.5725;       // Low Pass filter value :=0.5725; //ARMAX :=0.5461 //ARMAX
+    kant:LREAL:=1;          // Anti-windup gain value :=1; //ARMAX :=0.95 //SS
+	
+	count_PID: INT;
+	Temp_offset:LREAL:= 48.001; 	// 48 degree
+	Real_offset:LREAL:= 40.001;		// 40 % offset
+	fOut_tmp: LREAL;
+	fSetpInitial: LREAL;
+	fActInitial: LREAL;
+END_VAR
+]]></Declaration>
+    <Implementation>
+      <ST><![CDATA[count_PID:=count_PID+1;
+
+IF NOT OT_Global.Control_Point THEN
+	OT_Global.Control_Point_Act := FALSE;
+ELSE
+	OT_Global.Control_Point_Act := TRUE;
+END_IF
+
+IF OT_Global.OT_START AND OT_Global.OT_ON THEN	
+//	OC_Sim();
+	
+//************************************************************************************************************************************
+// Control on OTGT1 (temp exiting the mixing valve) (only active if bSystem_internatl flagged - NOT WHEN WE RUN)
+//IF NOT OT_Global.bSystem_Internal AND OT_Global.OTGL1_2 AND NOT OT_Global.Only_Cooling AND NOT OT_Global.Control_Point AND OT_GLOBAL.Internal_loop THEN	//AND NOT OT_Global.Control_Point
+	count_OTGT1:=count_OTGT1+1;
+//	OT_Global.Control_Point_Act := FALSE;
+	fSetpInitial := OT_Global.TV_Cmd;				// Setpoint Temp
+	fActInitial := OT_Global.OTGT1;				// Actual value Temp
+	// SWITCHING GAINS BASED ON REFERENCE...
+	//IF fSetp <=69 THEN						
+		//kp:= 3.01;		// 5
+		//ki:= 6;	// 10		
+		//kd:= 2.5;
+	//ELSIF fSetp >69 AND fSetp <=79 THEN
+		//kp:= 4.52;
+		//ki:= 24;			
+		//kd:= 2.5;
+	//ELSIF fSetp >79 THEN
+		//kp:= 4.53;		
+		//ki:= 30;			
+		//kd:= 2.5;
+	//END_IF		
+	//One_Shot := FALSE;
+//END_IF
+
+//-----------------------------------------------------------------
+	
+	IF bFirst THEN
+		//// JEREMY NEW ////
+		fPrevErr := 0;
+    	fDPrev   := 0;
+    	fIPrev   := 0;
+    	fIAPrev  := 0;
+    	fant     := 0;
+
+    	fDErrPrev:= 0;
+
+    	bFirst := FALSE;
+	END_IF
+	
+	fSetp := fSetpInitial - Temp_offset; // JNEW
+	fAct  := fActInitial  - Temp_offset; // JNEW
+	fErr:=fSetp-fAct;
+	
+	// P
+	fP := kp*(bff*fSetp - fAct);
+
+	// D
+	fDErr := fSetp*cff - fAct;
+	fD := fDPrev/(1+Tf*fPeriod) + kd*Tf*(fDErr-fDErrPrev);
+
+	// I
+	fI := fIPrev + fErr*ki*fPeriod;
+
+	// Anti-windup
+	fIA := fIAPrev + fant*kant;
+
+	// Saturation
+	fSum := fP + fD + fI + fIA;	
+	
+	//Saturation of valve with offset
+	IF fSum > 60 THEN 
+    	fOut_tmp := 60;
+	ELSIF fSum < -40 THEN
+    	fOut_tmp := -40;
+	ELSE
+    	fOut_tmp := fSum;
+	END_IF
+	
+	fant := fOut_tmp - fSum;
+	
+	//////////////////////////////////////
+	// ADD Offset: Control Signal
+	//////////////////////////////////////
+	fOut := fOut_tmp + Real_offset;
+
+	// WHERE WE SEND OUT SIGNAL
+	OT_Global.OTSV1 := LREAL_TO_REAL(fOut);	
+
+	// Updates - storing to previous
+	fPrevErr := fErr;
+	fDPrev := fD;
+	fIPrev := fI;
+	fIAPrev := fIA;
+	fDErrPrev := fDErr;
+	
+	// OLD JIRI CODE FOR OTHER:
+	//GT1Diff:=fAct - OT_Global.OTGT1;
+	//GT4Diff:=(OT_Global.OTGT4 - fAct);
+
+ELSE // RESETTING VALUES WHEN SIMULATION RESETS
+	IF NOT OT_Global.OT_START AND NOT OT_Global.OT_ON THEN
+		fIAPrev:=0;//fSumErr:=0; //Reset     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+		fPrevErr := 0;
+    	fDPrev   := 0;
+    	fIPrev   := 0;
+    	fIAPrev  := 0;
+    	fant     := 0;
+		bFirst:=FALSE;
+		fOut:=0;
+	END_IF
+END_IF
+
+(*
+ELSE // PID not active...
+	IF NOT OT_Global.OT_START AND NOT OT_Global.OT_ON AND OT_Global.OTGT6 > 80 AND NOT OT_Global.Quick_Cool THEN
+		fOut:=30;
+	ELSIF OT_Global.OT_START AND OT_Global.OT_ON AND (OT_Global.TV_Cmd < 30 OR OT_Global.TV_Cmd < 30) THEN
+		fOut:=50;
+	ELSIF OT_Global.Quick_Cool THEN
+		fOut:=80;
+	ELSE
+		fSumErr:=0; //Reset     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+		bFirst:=TRUE;
+		fOut:=0;
+	END_IF	
+END_IF
+*)]]></ST>
+    </Implementation>
+    <LineIds Name="Ctrl_OTSV1_PID">
+      <LineId Id="444" Count="1" />
+      <LineId Id="447" Count="5" />
+      <LineId Id="87" Count="0" />
+      <LineId Id="100" Count="1" />
+      <LineId Id="103" Count="24" />
+      <LineId Id="151" Count="11" />
+      <LineId Id="169" Count="0" />
+      <LineId Id="456" Count="0" />
+      <LineId Id="171" Count="19" />
+      <LineId Id="384" Count="0" />
+      <LineId Id="191" Count="7" />
+      <LineId Id="458" Count="1" />
+      <LineId Id="199" Count="12" />
+      <LineId Id="213" Count="0" />
+      <LineId Id="216" Count="3" />
+      <LineId Id="460" Count="11" />
+      <LineId Id="253" Count="0" />
+      <LineId Id="472" Count="0" />
+      <LineId Id="254" Count="13" />
+      <LineId Id="5" Count="0" />
+    </LineIds>
+  </POU>
+</TcPlcObject>
