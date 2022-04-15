@@ -78,15 +78,15 @@ zeros_Gp_disc = zero(Gp)
 
 figure(2)
 pzmap(Gp)
-
  
 %Gp = c2d(Gp_cont, Ts, 'zoh')
 
 %% Choose Poles (w_m, zeta_m) (w_o, zeta_o)
 
 %---------- A_m ------------
-w_m = .05; % (.027 IS SLOWEST w/ .7 zeta) (.021 IS SLOWEST w/ 1 zeta)
-zeta_m = 1; % BEST: .07
+
+w_m = .031; % (.027 IS SLOWEST w/ .7 zeta) (.031 IS SLOWEST w/ 1 zeta)
+zeta_m = .7; % BEST: .07
 
 % z^2 
 p1_m = 2*exp(-zeta_m*w_m*Ts2)*cos(w_m*Ts2*sqrt(1-(zeta_m)^2)); %
@@ -101,8 +101,8 @@ z1m = double(sol.z1m)
 z2m = double(sol.z2m)
 
 %---------- A_o -----------
-w_o = .027; %.02 is smallest
-zeta_o = 1.00;
+w_o = .05; %.02 is smallest
+zeta_o = 1;
 
 % Den: z^2 - (p1_o)*z + (p0_o) == 0
 p1_o = 2*exp(-zeta_o*w_o*Ts2)*cos(w_o*Ts2*sqrt(1-(zeta_o)^2));
@@ -135,6 +135,7 @@ z2o = double(sol.z2o)
 
 % fprintf('The original disc. poles are: 0.9915 +/- 0.0113i \n');
 % fprintf('The chosen cont. poles are: %d and %d \n', -w_m, -w_o);
+
 chosen_poles_machine = ['***The chosen disc. poles (Machine) are: ', num2str(z1m(1)),' and ', num2str(z1m(2)), '***'];
 chosen_poles_observer = ['***The chosen disc. poles (Observer) are: ', num2str(z1o(1)),' and ', num2str(z1o(2)), '***'];
 
@@ -143,7 +144,7 @@ disp(chosen_poles_observer)
 
 %% Diophantine Equ - BLANE ATTEMPT (DMC Version)
 syms S2 S1 S0 r0 z
-A_cl = (z^2+a1*z+a0)*(z-1)*(z+r0) + (b1*z + b0)*(S2*z^2 + S1*z + S0);
+A_cl = (a2*z^2+a1*z+a0)*(z-1)*(z+r0) + (b1*z + b0)*(S2*z^2 + S1*z + S0);
 A_m = (z^2-p1_m*z+p0_m);
 A_o = (z^2-p1_o*z+p0_o);
 A_d = A_m*A_o;
@@ -157,10 +158,10 @@ equ4 = A_cl_c(5) == A_d_c(5); % z^0
 
 sol = solve([equ1, equ2, equ3, equ4], [S2, S1, S0, r0]);
 
-S2 = double(sol.S2);   %
-S1 = double(sol.S1);   % 
-S0 = double(sol.S0);   % 
-r0 = double(sol.r0);   % 
+S2 = double(sol.S2);   
+S1 = double(sol.S1);    
+S0 = double(sol.S0);   
+r0 = double(sol.r0);    
 
 %% Controller TF - Gc (S/R)
 %z = tf('z', Ts2);
@@ -179,7 +180,7 @@ A_m = [1, -p1_m, p0_m];
 T = t_o*A_o;
 R = [1, r0-1, -r0];
 
-Gff = tf(T, R, Ts2);
+Gff = tf(T, R, Ts2)
 
 %% MATLAB PID TUNER SUBSTITUTION
 
@@ -223,13 +224,32 @@ c = double(sol.c)
 
 disp('---------- *** RESULTS - POLE PLACEMENT *** ------------')
 
-Gyr = Gff*Gp/(1+Gc*Gp);
-poles_Gyr = pole(Gyr);
-zeros_Gyr = zero(Gyr);
+%---------------------------ORIGINAL GYR-------------------------------
 
-Gyr = minreal(Gyr, 1e-2)
-poles_Gyr_min = pole(Gyr)
-zeros_Gyr_min = zero(Gyr)
+% Gyr = Gff*Gp/(1+Gc*Gp)
+% poles_Gyr = pole(Gyr)
+% zeros_Gyr = zero(Gyr)
+% 
+% Gyr = minreal(Gyr, 1e-3)
+% poles_Gyr_min = pole(Gyr)
+% zeros_Gyr_min = zero(Gyr)
+
+%----------------EXPERIMENT FOR BETTER ROUNDING GYR---------------------
+
+% Gyr = BT/(AR+BS)
+syms z
+A_clNew = (a2*z^2+a1*z+a0)*(z-1)*(z+r0) + (b1*z + b0)*(S2*z^2 + S1*z + S0);
+A_cl_cNew = double(fliplr(coeffs(A_clNew, z))); % retreive coeficients - (AR + BS)
+bT = (b2*z^2 + b1*z + b0)*(T(1)*z^2 + T(2)*z + T(3));
+bT_c = double(fliplr(coeffs(bT, z)));
+
+Gyr = tf(bT_c, A_cl_cNew, Ts2);
+poles_GyrNEW = pole(Gyr);
+zeros_GyrNEW = zero(Gyr);
+
+Gyr= minreal(Gyr, 1e-3)
+poles_GyrNEW_min = pole(Gyr)
+zeros_GyrNEW_min = zero(Gyr)
 
 figure(3)
 pzmap(Gyr)
@@ -269,8 +289,20 @@ PD_den = [1, r0];
 
 %% Sensitivy Analysis
 
+%---------------------OLD SENSITIVITY---------------------------
+
 S_e = 1/(1 + Gp*Gc);
 T_e = 1 - S_e;
+
+%---------------------NEW SENSITIVITY (SAME RESULT)---------------------------
+
+% S_e = (AR)/(AR+BS)
+% syms z
+% AR = (a2*z^2+a1*z+a0)*(z-1)*(z+r0);
+% AR_c = double(fliplr(coeffs(AR, z))); % retreive coeficients - (AR + BS)
+% 
+% S_e = tf(AR_c, A_cl_cNew, Ts2);
+% T_e = 1 - S_e;
 
 figure(5)
 bode(S_e, T_e)
@@ -278,6 +310,7 @@ legend('Sensitivity Ftn', 'Comp. Sensitivity Ftn')
 
 figure(6)
 margin(Gyr)
+
 %% PID Tuner Parameter Method
 
 % Jeremy ("Poles: .781, .991"):

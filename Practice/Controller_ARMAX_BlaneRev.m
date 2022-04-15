@@ -170,6 +170,7 @@ S = [S2, S1, S0];
 R = [1, r0-1, -r0];
 
 Gc = tf(S, R, Ts2)
+
 %% Gff (T/R) and Gyr
 
 t_o = (1-p1_m+p0_m)/(b1 + b0);
@@ -178,7 +179,7 @@ A_m = [1, -p1_m, p0_m];
 T = t_o*A_o;
 R = [1, r0-1, -r0];
 
-Gff = tf(T, R, Ts2);
+Gff = tf(T, R, Ts2)
 
 %% MATLAB PID TUNER SUBSTITUTION
 
@@ -222,13 +223,32 @@ c = double(sol.c)
 
 disp('---------- *** RESULTS - POLE PLACEMENT *** ------------')
 
-Gyr = Gff*Gp/(1+Gc*Gp);
-poles_Gyr = pole(Gyr);
-zeros_Gyr = zero(Gyr);
+%---------------------------ORIGINAL GYR-------------------------------
 
-Gyr = minreal(Gyr, 1e-2)
-poles_Gyr_min = pole(Gyr)
-zeros_Gyr_min = zero(Gyr)
+% Gyr = Gff*Gp/(1+Gc*Gp)
+% poles_Gyr = pole(Gyr)
+% zeros_Gyr = zero(Gyr)
+% 
+% Gyr = minreal(Gyr, 1e-3)
+% poles_Gyr_min = pole(Gyr)
+% zeros_Gyr_min = zero(Gyr)
+
+%----------------EXPERIMENT FOR BETTER ROUNDING GYR---------------------
+
+% Gyr = BT/(AR+BS)
+syms z
+A_clNew = (z^2+a1*z+a0)*(z-1)*(z+r0) + (b1*z + b0)*(S2*z^2 + S1*z + S0);
+A_cl_cNew = double(fliplr(coeffs(A_clNew, z))); % retreive coeficients - (AR + BS)
+bT = (b2*z^2 + b1*z + b0)*(T(1)*z^2 + T(2)*z + T(3));
+bT_c = double(fliplr(coeffs(bT, z)));
+
+Gyr = tf(bT_c, A_cl_cNew, Ts2)
+poles_GyrNEW = pole(Gyr)
+zeros_GyrNEW = zero(Gyr)
+
+Gyr= minreal(Gyr, 1e-3)
+poles_GyrNEW_min = pole(Gyr)
+zeros_GyrNEW_min = zero(Gyr)
 
 figure(3)
 pzmap(Gyr)
@@ -238,7 +258,7 @@ grid on
 step(Gyr)
 
 [y, t] = step(Gyr);
-sserr = abs(1 - y(end))
+sserr = abs(1 - y(end));
 stepinfo(Gyr)
 
 %% AntiWindup Changes
@@ -266,8 +286,20 @@ PD_den = [1, r0];
 
 %% Sensitivy Analysis
 
+%---------------------OLD SENSITIVITY---------------------------
+
 S_e = 1/(1 + Gp*Gc);
 T_e = 1 - S_e;
+
+%---------------------NEW SENSITIVITY (SAME RESULT)---------------------------
+
+% S_e = (AR)/(AR+BS)
+% syms z
+% AR = (a2*z^2+a1*z+a0)*(z-1)*(z+r0);
+% AR_c = double(fliplr(coeffs(AR, z))); % retreive coeficients - (AR + BS)
+% 
+% S_e = tf(AR_c, A_cl_cNew, Ts2);
+% T_e = 1 - S_e;
 
 figure(5)
 bode(S_e, T_e)
@@ -275,6 +307,7 @@ legend('Sensitivity Ftn', 'Comp. Sensitivity Ftn')
 
 figure(6)
 margin(Gyr)
+
 %% PID Tuner Parameter Method
 
 disp('------------- *** RESULTS - PID TUNER *** --------------')
