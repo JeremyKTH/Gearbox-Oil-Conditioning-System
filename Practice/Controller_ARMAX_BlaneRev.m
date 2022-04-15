@@ -58,7 +58,7 @@ nb = 1;
 nc = 1;
 nk = 1;
     
-sysARMAX = armax(data_train, [na nb nc nk], opt)
+sysARMAX = armax(data_train, [na nb nc nk], opt);
 
 opt = compareOptions('InitialCondition','e');
 
@@ -68,7 +68,7 @@ compare(data_test, sysARMAX, opt)
 Gp_origin = tf(sysARMAX);
 Gp_cont = d2c(Gp_origin, 'zoh'); %converting to cont.
 
-Gp = tf(sysARMAX)
+Gp = tf(sysARMAX);
 
 [num, den] = tfdata(Gp_origin); %2 poles, 1 zero
 b2 = num{1}(1); %zero z^2 (0)
@@ -83,7 +83,7 @@ B = [b2, b1, b0];  % B
 A = [a2, a1, a0];  % A
 
 %Changing sampling time for later
-%Gp = tf(B, A, Ts2)
+Gp = tf(B, A, Ts2)
 
 poles_Gp_disc = pole(Gp)
 zeros_Gp_disc = zero(Gp)
@@ -93,11 +93,14 @@ pzmap(Gp)
 
 %% Choose Poles (w_m, zeta_m) (w_o, zeta_o)
 
-%---------- A_m ------------
-w_m = .05; % (.04 smallest at zeta=.7)(.03 smallest at zeta = 1) 
-zeta_m = 1; % BEST: .07
+%////////////////////////// A_m /////////////////////////////
 
-% Den: z^2 - (p1_o)*z + (p0_o) == 0
+% -----------------FROM CONTINUOUS POLES:--------------------
+
+w_m = .028; % (.028 IS SLOWEST w/ .7 zeta) (.020 IS SLOWEST w/ 1 zeta)
+zeta_m = 1; %
+
+% z^2 
 p1_m = 2*exp(-zeta_m*w_m*Ts2)*cos(w_m*Ts2*sqrt(1-(zeta_m)^2)); %
 p0_m = exp(-2*zeta_m*w_m*Ts2);
 
@@ -109,8 +112,19 @@ sol = solve([eqn1, eqn2], [z1m, z2m]);
 z1m = double(sol.z1m)
 z2m = double(sol.z2m)
 
-%---------- A_o -----------
-w_o = .028; %(.03 smallest at zeta = 1)
+% -----------------DIRECT DISCRETE POLES:-----------------------
+
+% z1m = .991
+% z2m = .781
+% 
+% p1_m = z1m + z2m; 
+% p0_m = z1m*z2m;
+
+%////////////////////////// A_O /////////////////////////////
+
+% ----------------FROM CONTINUOUS POLES:---------------------
+
+w_o = .235; % (.02 is smallest) ()
 zeta_o = 1;
 
 % Den: z^2 - (p1_o)*z + (p0_o) == 0
@@ -125,18 +139,24 @@ sol = solve([eqn1, eqn2], [z1o, z2o]);
 z1o = double(sol.z1o)
 z2o = double(sol.z2o)
 
-%NOTE: 
-% -Faster observer for modelling error rejection *
+chosen_poles_machine = ['***The chosen disc. poles (Machine) are: ', num2str(z1m(1)),' and ', num2str(z2m(1)), '***'];
+chosen_poles_observer = ['***The chosen disc. poles (Observer) are: ', num2str(z1o(1)),' and ', num2str(z2o(1)), '***'];
+
+% ------------------DIRECT DISCRETE POLES:---------------------
+
+% % z1o = .991
+% % z2o = z1o
+% % 
+% % p1_o = z1o + z2o; %
+% % p0_o = z1o*z2o;
+% 
+% chosen_poles_machine = ['***The chosen disc. poles (Machine) are: ', num2str(z1m),' and ', num2str(z2m), '***'];
+% chosen_poles_observer = ['***The chosen disc. poles (Observer) are: ', num2str(z1o),' and ', num2str(z2o), '***'];
+
+%------------------------------------------------------------
+% NOTE: 
+% -Faster observer for modelling error rejection 
 % -Slower observer for filtering high frequency noise
-
-%----------------------------------
-
-% Convert to associating discrete poles (ONLY WORK IF ZETA = 1)
-% w_m_d_T = exp(-zeta_m*w_m*Ts2)
-% w_o_d_T = exp(-zeta_o*w_o*Ts2)
-
-chosen_poles_machine = ['***The chosen disc. poles (Machine) are: ', num2str(z1m(1)),' and ', num2str(z1m(2)), '***'];
-chosen_poles_observer = ['***The chosen disc. poles (Observer) are: ', num2str(z1o(1)),' and ', num2str(z1o(2)), '***'];
 
 disp(chosen_poles_machine)
 disp(chosen_poles_observer)
@@ -312,50 +332,32 @@ margin(Gyr)
 
 disp('------------- *** RESULTS - PID TUNER *** --------------')
 
-% % Test 1:
-% P_tun = 57.8342;
-% I_tun = 1.6525;
-% D_tun = 823.7774;
-% N_tun = 0.5153;
-% b_tun = 0.1603;
-% c_tun = 0.0068;
-% % k_ant = 1;
+% % Blane 2 (118.78 sec, .0151 rad/sec):
+% P_tun = 3.5003;
+% I_tun = 0.0456;
+% D_tun = 30.89;
+% N_tun = 0.0565;
+% b_tun = 0.8831;
+% c_tun = 0.9256;
+% k_ant = 0.11;
 
-% % Test 2:
-% P_tun = 57.5573;
-% I_tun = 1.5134;
-% D_tun= 923.3159;
-% N_tun = .5725;
-% b_tun = .1292;
-% c_tun = .0041;
-% % k_ant = 1;
+% % Blane 3 (119.42 sec, .020 rad/sec):
+% P_tun = 4.8359;
+% I_tun = 0.0628;
+% D_tun = 52.7197;
+% N_tun = 0.0711;
+% b_tun = 0.6607;
+% c_tun = 0.4031;
+% k_ant = 0.21;
 
-% % Test 3:
-% P_tun = ;
-% I_tun = ;
-% D_tun= ;
-% N_tun = ;
-% b_tun = ;
-% c_tun = ;
-% % k_ant = ;
-
-% Jeremy:
-P_tun = 5.628;
-I_tun = .06907;
-D_tun= 109.2;
-N_tun = .6217;
+% Jeremy (120 sec):
+P_tun = 2.97;
+I_tun = 0.03741;
+D_tun = 7.966;
+N_tun = 0.8683;
 b_tun = 1;
 c_tun = 1;
-% k_ant = .012;
-
-% %//////////////// Simulink "Tuner"  /////////////////:
-% P_tun  = 49.0796;
-% I_tun  = 1.2307;
-% D_tun  = 827.2157;
-% N_tun  = 0.6915;
-% b_tun  = 0.1411;
-% c_tun  = 0.0065;
-%  % k_ant = 0.08;
+k_ant = 0.1;
 
 % %///////////////////////////////////////////////
 
@@ -365,10 +367,10 @@ Gc_tun = P_tun + I_tun*Ts2/(z-1) + D_tun*((N_tun)/(1+((N_tun*Ts2)/(z-1))));
 Gff_tun = b_tun*P_tun + I_tun*Ts2/(z-1) + c_tun*D_tun*((N_tun)/(1+((N_tun*Ts2)/(z-1))));
 Gyr_tun = Gff_tun*Gp/(1+Gc_tun*Gp);
 
-Gyr_tun = minreal(Gyr_tun, 1e-2);
+Gyr_tun = minreal(Gyr_tun, 1e-2)
 
-pole_tun = pole(Gyr_tun);
-zero_tun = zero(Gyr_tun);
+pole_tun = pole(Gyr_tun)
+zero_tun = zero(Gyr_tun)
 
 % figure(7)
 % pzmap(Gyr_tun)

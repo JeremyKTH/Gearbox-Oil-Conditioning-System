@@ -92,11 +92,11 @@ pzmap(Gp)
 
 %% Choose Poles (z+p_m)(z+p_o)
 %--- A_m ------
-a_m = .022; % continuous pole (s + a) .9(fast)---
+a_m = .0183; % (.01 - 219.6 sec rise time, .0183 - 120 sec rise time)
 p_m = exp(-a_m*Ts); % convert to discrete
 
 %--- A_o ------
-a_o = .018; % continuous pole (s + a)
+a_o = .007; % continuous pole (s + a)
 p_o = exp(-a_o*Ts); % convert to discrete
 
 %NOTE: 
@@ -214,35 +214,23 @@ margin(Gyr)
 
 disp('------------- *** RESULTS - PID TUNER *** --------------')
 
-% % Test 1 ():
-% P_tun = 48.9757;
-% I_tun = 1.6241;
-% b_tun = .2618;
-% % k_ant = 1;
+% % Blane 1 (119.38 sec, .0154 rad/s):
+% P_tun = 4.9242;
+% I_tun = 0.0392;
+% b_tun = 1.1398;
+% k_ant = 0.007;
 
-% % Test 2 ():
-% P_tun = 49.9724;
-% I_tun = .9620;
-% b_tun = .3351;
-% % k_ant = 1;
+% % Blane 2 (119.41 sec, .0203 rad/s):
+% P_tun = 6.1511;
+% I_tun = 0.0616;
+% b_tun = 0.9125;
+% k_ant = 1;
 
-% Test 3 ():
-% P_tun = ;
-% I_tun = ;
-% b_tun = ;
-% % k_ant = ;
-
-% Jeremy ():
-P_tun = 3.173;
-I_tun = 0.08704;
-b_tun = 0.008893;
-% k_ant = ;
-
-% %//////////////// Simulink "Tuner"  /////////////////:
-% P_tun  = ;
-% I_tun  = ;
-% b_tun  = ;
-% % k_ant = ;
+% Jeremy (119.2 sec):
+P_tun = 2.578;
+I_tun = 0.07079;
+b_tun = 0.008458;
+k_ant = 0.5;
 
 % %///////////////////////////////////////////////
 
@@ -253,8 +241,8 @@ Gff_tun = b_tun*P_tun  + I_tun *Ts2/(z-1);
 Gyr_tun = Gff_tun*Gp/(1+Gc_tun*Gp);
 Gyr_tun = minreal(Gyr_tun, 1e-5);
 
-pole_tun = pole(Gyr_tun)
-zero_tun = zero(Gyr_tun)
+pole_tun = pole(Gyr_tun);
+zero_tun = zero(Gyr_tun);
 
 % figure(7)
 % pzmap(Gyr_tun)
@@ -264,8 +252,8 @@ zero_tun = zero(Gyr_tun)
 % step(Gyr_tun)
 
 [y, t] = step(Gyr_tun);
-stepinfo(Gyr_tun)
-sserr = abs(1 - y(end))
+stepinfo(Gyr_tun);
+sserr = abs(1 - y(end));
 
 S_e = 1/(1 + Gp*Gc_tun);
 T_e = 1 - S_e;

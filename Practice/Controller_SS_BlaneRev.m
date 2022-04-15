@@ -83,10 +83,12 @@ pzmap(Gp)
 
 %% Choose Poles (w_m, zeta_m) (w_o, zeta_o)
 
-%---------- A_m ------------
+%////////////////////////// A_m /////////////////////////////
 
-w_m = .031; % (.027 IS SLOWEST w/ .7 zeta) (.031 IS SLOWEST w/ 1 zeta)
-zeta_m = .7; % BEST: .07
+% -----------------FROM CONTINUOUS POLES:--------------------
+
+w_m = .028; % (.028 IS SLOWEST w/ .7 zeta) (.020 IS SLOWEST w/ 1 zeta)
+zeta_m = 1; %
 
 % z^2 
 p1_m = 2*exp(-zeta_m*w_m*Ts2)*cos(w_m*Ts2*sqrt(1-(zeta_m)^2)); %
@@ -100,8 +102,19 @@ sol = solve([eqn1, eqn2], [z1m, z2m]);
 z1m = double(sol.z1m)
 z2m = double(sol.z2m)
 
-%---------- A_o -----------
-w_o = .05; %.02 is smallest
+% -----------------DIRECT DISCRETE POLES:-----------------------
+
+% z1m = .991
+% z2m = .781
+% 
+% p1_m = z1m + z2m; 
+% p0_m = z1m*z2m;
+
+%////////////////////////// A_O /////////////////////////////
+
+% ----------------FROM CONTINUOUS POLES:---------------------
+
+w_o = .0235; % (.02 is smallest) ()
 zeta_o = 1;
 
 % Den: z^2 - (p1_o)*z + (p0_o) == 0
@@ -116,28 +129,24 @@ sol = solve([eqn1, eqn2], [z1o, z2o]);
 z1o = double(sol.z1o)
 z2o = double(sol.z2o)
 
+chosen_poles_machine = ['***The chosen disc. poles (Machine) are: ', num2str(z1m(1)),' and ', num2str(z2m(1)), '***'];
+chosen_poles_observer = ['***The chosen disc. poles (Observer) are: ', num2str(z1o(1)),' and ', num2str(z2o(1)), '***'];
+
+% ------------------DIRECT DISCRETE POLES:---------------------
+
+% % z1o = .991
+% % z2o = z1o
+% % 
+% % p1_o = z1o + z2o; %
+% % p0_o = z1o*z2o;
+% 
+% chosen_poles_machine = ['***The chosen disc. poles (Machine) are: ', num2str(z1m),' and ', num2str(z2m), '***'];
+% chosen_poles_observer = ['***The chosen disc. poles (Observer) are: ', num2str(z1o),' and ', num2str(z2o), '***'];
+
+%------------------------------------------------------------
 %NOTE: 
 % -Faster observer for modelling error rejection *
 % -Slower observer for filtering high frequency noise
-
-%----------------------------------
-
-% Convert to associating discrete poles (ONLY WORK IF ZETA = 1)
-% w_m_d_T = exp(-zeta_m*w_m*Ts2)
-% w_o_d_T = exp(-zeta_o*w_o*Ts2)
-
-% syms x
-% eqn1 = x^2 - (p1_o)*x + (p0_o) == 0;
-% 
-% x = solve(eqn1, x);
-% w_m_d = double(x(1,1))
-% w_o_d = double(x(2,1))
-
-% fprintf('The original disc. poles are: 0.9915 +/- 0.0113i \n');
-% fprintf('The chosen cont. poles are: %d and %d \n', -w_m, -w_o);
-
-chosen_poles_machine = ['***The chosen disc. poles (Machine) are: ', num2str(z1m(1)),' and ', num2str(z1m(2)), '***'];
-chosen_poles_observer = ['***The chosen disc. poles (Observer) are: ', num2str(z1o(1)),' and ', num2str(z1o(2)), '***'];
 
 disp(chosen_poles_machine)
 disp(chosen_poles_observer)
@@ -244,12 +253,12 @@ bT = (b2*z^2 + b1*z + b0)*(T(1)*z^2 + T(2)*z + T(3));
 bT_c = double(fliplr(coeffs(bT, z)));
 
 Gyr = tf(bT_c, A_cl_cNew, Ts2);
-poles_GyrNEW = pole(Gyr);
-zeros_GyrNEW = zero(Gyr);
+poles_Gyr = pole(Gyr);
+zeros_Gyr = zero(Gyr);
 
 Gyr= minreal(Gyr, 1e-3)
-poles_GyrNEW_min = pole(Gyr)
-zeros_GyrNEW_min = zero(Gyr)
+poles_Gyr_min = pole(Gyr)
+zeros_Gyr_min = zero(Gyr)
 
 figure(3)
 pzmap(Gyr)
@@ -313,33 +322,32 @@ margin(Gyr)
 
 %% PID Tuner Parameter Method
 
-% Jeremy ("Poles: .781, .991"):
-% P_tun = 5.973;
-% I_tun = 0.07987;
-% D_tun = 95.85;
-% N_tun = 0.5735;
-% b_tun = 1;
-% c_tun = 1;
-% % k_ant = 2.2;
+% % Blane 2 (118.61 sec, .0152 rad/s):
+% P_tun = 3.4044;
+% I_tun = 0.0438;
+% D_tun = 55.0446;
+% N_tun = 0.0652;
+% b_tun = 0.9023;
+% c_tun = 0.5979;
+% k_ant = 0.06;
 
-% Jeremy 2 ("Poles: .781, .991"):
-% Ts = 1;
-P_tun = 7.185;
-I_tun = .1006;
-D_tun = 126.3;
-N_tun = .5253;
-b_tun = .04062;
-c_tun = .0007977;
-% Kant = 2.2;
+% % Blane 4 (119.33 sec, .0202 rad/s):
+% P_tun = 4.6430;
+% I_tun = 0.0589;
+% D_tun = 78.2077;
+% N_tun = 0.0787;
+% b_tun = 0.6901;
+% c_tun = 0.3270;
+% Kant = 0.1;
 
-% %//////////////// Simulink "Tuner"  /////////////////:
-% P_tun  = 49.0796;
-% I_tun  = 1.2307;
-% D_tun  = 827.2157;
-% N_tun  = 0.6915;
-% b_tun  = 0.1411;
-% c_tun  = 0.0065;
-%  % k_ant = 0.08;
+% Jeremy (119.6 sec):
+P_tun  = 5.656;
+I_tun  = 0.07951;
+D_tun  = 6.479;
+N_tun  = 0.5348;
+b_tun  = 0.017;
+c_tun  = 3.44E-05;
+k_ant = 0.11;
 
 % %///////////////////////////////////////////////
 
