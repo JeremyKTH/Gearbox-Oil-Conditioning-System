@@ -42,12 +42,15 @@ Best_30, Best_40, Best_50 contains all the best model structure for each system 
 
 Controller_ARMAX, Controller_SS, Controller_TF contains the controllers developed upon the top 3 models from research question 1.
 
+NRMSE_calculation calculates the NRMSE of the simulation
+
 * Best_30
 * Best_40
 * Best_50
 * Controller_ARMAX
 * Controller_SS
 * Controller_TF
+* NRMSE_calculation
 
 ## Simulink_Folder
 The simulink files are used for initial simulation of the system identification models as well as inspecting the controller performances.
