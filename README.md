@@ -40,16 +40,18 @@ SI_47414, SI_48414, SI_49404 are the system identification programs developed wi
 ## Matlab_Folder
 Best_30, Best_40, Best_50 contains all the best model structure for each system identification models at ± 30%, ± 40%, ± 50% operating range. The best 3 system identification models based on simulation accuracy are selected for research question 2. (ARMAX, SS, TF)
 
-Controller_ARMAX, Controller_SS, Controller_TF contains the controllers developed upon the top 3 models from research question 1.
-
-NRMSE_calculation calculates the NRMSE of the simulation
-
 * Best_30
 * Best_40
 * Best_50
+
+Controller_ARMAX, Controller_SS, Controller_TF contains the controllers developed upon the top 3 models from research question 1.
+
 * Controller_ARMAX
 * Controller_SS
 * Controller_TF
+
+NRMSE_calculation calculates the NRMSE of the simulation
+
 * NRMSE_calculation
 
 ## Simulink_Folder
