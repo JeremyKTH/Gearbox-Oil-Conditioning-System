@@ -32,12 +32,12 @@ The original recoreded data from the testbed are cleaned and the useful informat
 
 SI_47414, SI_48414, SI_49404 are the system identification programs developed with JupyterLab in language Matlab for easier reading.
 
-* Data Pre-process
+* DPP_System_Identification
+* DPP_Torque
+* DPP_Flow
 * SI_47414 (± 30% operating range )
 * SI_48404 (± 40% operating range )
 * SI_49404 (± 50% operating range )
-* Torque_DPP (Data Pre-process for torque test)
-* Flow_DPP (Data Pre-process for flow test)
 
 ## Matlab_Folder
 Best_30, Best_40, Best_50 contains all the best model structure for each system identification models at ± 30%, ± 40%, ± 50% operating range. The best 3 system identification models based on simulation accuracy are selected for research question 2. (ARMAX, SS, TF)
