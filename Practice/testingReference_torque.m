@@ -9,7 +9,7 @@ clear all
 inputRPM = 1500;    %Speed of 
 torqueInc = 250;    %Amount to increment torque each loop
 flowRPM = 1750;     %flow rate rpm (50% - 11 L/min and 1750 rpm)
-maxTorque = 1500;
+maxTorque = 1250;
 
 % Time variables:
 %equil = 55; % equilibrium point for valve openeing [%]
@@ -17,10 +17,10 @@ heatTime = 10; %time to heat-up [min]
 coolDownTime = 5; % time to cooldown [min]
 sampleRate = .1; % desired rate for sending reference [sec]
 startTime = 10; % when to start the square wave[min]
-period = 10; % period of increment [min]
+period = 20; % period of increment [min]
 
 loadTime = 5;
-equilTime = 10;
+equilTime = 15;
 period = loadTime + equilTime;
 
 %% Conversions (min --> sec)

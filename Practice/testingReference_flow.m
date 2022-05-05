@@ -7,23 +7,23 @@ clear all
 %% Desired Values (INPUT HERE)
 
 inputRPM = 1500;    %Speed of 
-torqueInc = 250;    %Amount to increment torque each loop
+torqueInc = 500;    %Amount to increment torque each loop
 maxTorque = 1500;
 
-equilFlow = 11;     %flow rate rpm (50% - 11 L/min and 1750 rpm)
-maxFlow = 22;    %3500
+equilFlow = 1750;     %flow rate rpm (50% - 11 L/min and 1750 rpm)
+maxFlow = 3500;    %3500
 minFlow = 0;     %0
-flowInc = 2.2;      %11
+flowInc = 350;      %11
 
 % Time variables:
 
-heatTime = 10; %time to heat-up [min]
-startTime = 15; % when to start the square wave[min]
-coolDownTime = 10; % time to cooldown [min]
+heatTime = 20; %time to heat-up [min]
+startTime = 20; % when to start the square wave[min]
+coolDownTime = -15; % time to cooldown [min]
 sampleRate = .1; % desired rate for sending reference [sec]
 
 loadTime = 5;
-equilTime = 10;
+equilTime = 15;
 period = loadTime + equilTime;
 
 altPeriod = 10; %time before switching back the other way
@@ -74,7 +74,7 @@ for n = 0:counterMax-1
             torque(i) = 0;
         end
     end
-    for i = halfTime:halfTime+(period*(n+1))
+    for i = halfTime:halfTime+altPeriod+(period*(n-1))
         torque(i) = torque(i-altPeriod-(period*counterMax-1));
         flow(i) = -flow(i-altPeriod-(period*counterMax-1)) + equilFlow*2;
     end
@@ -86,16 +86,16 @@ hold on
 
 yyaxis right
 plot(time./60, torque,'r', 'DisplayName', 'Torque Load [Nm]')
-yticks([-1500, 250, 1500]);
+yticks([-1500:500:1500]);
 ylim([-1750 1750]);
-ylabel('Torque Load and RPM')
+ylabel('Torque Load and Gearbox RPM')
 yline(inputRPM , '--m', 'DisplayName', 'Gearbox RPM')
 
 yyaxis left
-plot(time./60, flow, 'DisplayName', 'Oil Pump Flow [L/min]')
-yticks([0:2.2:22]);
-ylim([-3 25]);
-ylabel('Flow Rate [L/min]')
+plot(time./60, flow, 'DisplayName', 'Oil Pump RPM')
+yticks([0:350:3500]);
+ylim([-350 3850]);
+ylabel('Oil Pump RPM')
 
 %xticks([0:10:totalTime/60])
 xlim([0 totalTime/60]);

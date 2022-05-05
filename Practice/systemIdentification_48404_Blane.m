@@ -10,7 +10,7 @@ clear all
 
 %======BLANE (ALL) DATA===========
 % SYSTEM ID DATA: 40 - 70 - 40 - 10 - 40  ( 30%) - D_47414
-T_data_all = readtable('E:\Users\Blane Brinkley\OneDrive\Documents\Scania_GearboxOilTestBed\thesis_Data\systemID_testing_2.24\segmented_Data\D_48404_all.csv');
+T_data_all = readtable('H:\Shared drives\Scania Thesis\Code\Test Data\Ts = 0.4\Partition Data\D_48404_all.csv');
 T_data_all.Properties.VariableNames = {'OTSV1', 'QV11', 'TV11', 'OTGT1', 'OTGT2', 'OTGT3', 'OTGT4', 'OTGT6', 'KVSV1', 'KVSV1_FB', 'KVGT2', 'TV12'};
 
 delay = 20; % 15 sec delay
@@ -31,15 +31,15 @@ coolantSource_Temp = table2array(T_data_all(:, 11));    % KVGT2 (11) - Source te
 intoGearbox_temp = table2array(T_data_all(:, 12));      % TV12 (12) - Inlet Gearbox Temp
 
 %% Training/Testing data sets
-%T_data = readtable('H:\Shared drives\Scania Thesis\Code\Test Data\Ts = 0.4\Training_Data\D_48404_train.csv');
-%T_train.Properties.VariableNames = {'OTSV1', 'TV12', 'TV11', 'OTGT1'};
-T_train = readtable('H:\Shared drives\Scania Thesis\Code\Test Data\Ts = 1\Training_Data\D_48404_train.csv');
-T_train.Properties.VariableNames = {'OTSV1', 'TV12', 'TV11'};
+T_train = readtable('H:\Shared drives\Scania Thesis\Code\Test Data\Ts = 0.4\Training_Data\D_48404_train.csv');
+T_train.Properties.VariableNames = {'OTSV1', 'TV12', 'TV11', 'OTGT1'};
+% T_train = readtable('H:\Shared drives\Scania Thesis\Code\Test Data\Ts = 0.4\Training_Data\D_48404_train.csv');
+% T_train.Properties.VariableNames = {'OTSV1', 'TV12', 'TV11'};
 
-%T_data = readtable('H:\Shared drives\Scania Thesis\Code\Test Data\Ts = 0.4\Training_Data\D_48404_test.csv');
-%T_test.Properties.VariableNames = {'OTSV1', 'TV12', 'TV11', 'OTGT1'};
-T_test = readtable('H:\Shared drives\Scania Thesis\Code\Test Data\Ts = 1\Testing_Data\D_48404_test.csv');
-T_test.Properties.VariableNames = {'OTSV1', 'TV12', 'TV11'};
+T_test = readtable('H:\Shared drives\Scania Thesis\Code\Test Data\Ts = 0.4\Testing_Data\D_48404_test.csv');
+T_test.Properties.VariableNames = {'OTSV1', 'TV12', 'TV11', 'OTGT1'};
+% T_test = readtable('H:\Shared drives\Scania Thesis\Code\Test Data\Ts = 0.4\Testing_Data\D_48404_test.csv');
+% T_test.Properties.VariableNames = {'OTSV1', 'TV12', 'TV11'};
 
 %Ts = 0.4;   % 200 ms --> base time from when Jeremy converted
 Ts = 1; %**NEW DATASET FOR CONTROLLER**
@@ -57,20 +57,21 @@ time = (0:Ts_all:total_time)./60;
 figure(1)
 clf
 hold on
-plot(time, mainValve_Per, 'DisplayName', 'Mixing valve percentage')
-plot(time, intoGearbox_Flow, 'DisplayName', 'Inlet Gearbox Flow')
-plot(time, outGearbox_Temp, 'DisplayName', 'Outlet Gearbox Temp')
-plot(time, intoHE_Temp, 'DisplayName', 'Inlet HE Temp')
+plot(time, mainValve_Per, 'DisplayName', 'Mixing Valve [%]')
+plot(time, intoGearbox_Flow, 'DisplayName', 'Oil Flow [L/min.]')
+plot(time, outGearbox_Temp, 'DisplayName', 'Oil Temp. - Gearbox Out [°C]')
+plot(time, intoHE_Temp, 'DisplayName', 'Water-Glycol Temp. - HE In [°C]')
 %plot(time, outHE_Temp, 'DisplayName', 'Outlet HE Temp')
 %plot(time, intoCooler_Temp, 'DisplayName', 'Inlet Cooler Temp')
-plot(time, intoMix_cold_Temp, 'DisplayName', 'Cold Inlet Mixing Valve')
-plot(time, intoMix_hot_Temp, 'DisplayName', 'Heat Inlet Mixing Valve ')
-plot(time, coolantValve_Per, 'DisplayName', 'Coolant Valve Percentage')
+plot(time, intoMix_cold_Temp, 'DisplayName', 'Mixing Valve - Cool In [°C]')
+plot(time, intoMix_hot_Temp, 'DisplayName', 'Mixing Valve - Hot In [°C]')
+plot(time, coolantValve_Per, 'DisplayName', 'Coolant Valve [%]')
 %plot(time, coolantValve_FB, 'DisplayName', 'Feedback for coolant valve')
 %plot(time, coolantSource_Temp, 'DisplayName', 'Source temp for cooler')
-plot(time, intoGearbox_temp, 'DisplayName', 'Inlet Gearbox Temp')
+plot(time, intoGearbox_temp, 'DisplayName', 'Oil Temp. - Gearbox In [°C]')
 title('Raw Data Plot (+/- 40%)')
 xlabel('Time (minutes)')
+ylabel('Misc. Parameters')
 legend()
 hold off
 
