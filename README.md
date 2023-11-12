@@ -3,6 +3,9 @@ This is a repo for our Master Thesis. The code mainly done in Matlab and TwinCAT
 
 
 
+
+
+
 ## Table of contents
 
 <!--ts-->
@@ -17,6 +20,10 @@ This is a repo for our Master Thesis. The code mainly done in Matlab and TwinCAT
 
 <!-- ABOUT THE PROJECT -->
 ## Introduction
+This master thesis performed data-driven development-cycle transformation and optimisation for Scania powertrain test rig department. More specifically:
+- Developed systematic framework for testbed model estimation and gearbox oil controller design; Collaborated team decreased controller design timespan from 2 weeks to 1 week (0.25 FTE)
+- Created testbed numeric model and improved controller performance by 200% with data and ML
+
 This master thesis contains two research questions:
 
 RQ1: Is about the investigation of system identification of a Gearbox Oil Conditioning System.
