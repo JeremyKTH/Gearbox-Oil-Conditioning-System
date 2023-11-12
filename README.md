@@ -1,10 +1,8 @@
 # Gearbox-Oil-Conditioning-System
-This is a repo for our Master Thesis. The code mainly done in Matlab and TwinCAT 3 through jupyter Lab.
-
-
-
-
-
+This master thesis performed data-driven development-cycle transformation and optimisation for Scania powertrain test rig department. More specifically:
+- Developed systematic framework for testbed model estimation and gearbox oil controller design; Collaborated team decreased controller design timespan from 2 weeks to 1 week (0.25 FTE)
+- Created testbed numeric model which was previously impossible
+- Greatly improved controller performance with data and Machine Learning
 
 ## Table of contents
 
@@ -20,10 +18,6 @@ This is a repo for our Master Thesis. The code mainly done in Matlab and TwinCAT
 
 <!-- ABOUT THE PROJECT -->
 ## Introduction
-This master thesis performed data-driven development-cycle transformation and optimisation for Scania powertrain test rig department. More specifically:
-- Developed systematic framework for testbed model estimation and gearbox oil controller design; Collaborated team decreased controller design timespan from 2 weeks to 1 week (0.25 FTE)
-- Created testbed numeric model which was previously impossible
-- Greatly improved controller performance with data and Machine Learning
 
 This master thesis contains two research questions:
 
